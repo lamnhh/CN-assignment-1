@@ -1,5 +1,5 @@
 # Computer Network - Assignment 1
-Create a simple Facebook clone. Features required:
+Create a simple Facebook clone. Required features:
 
 - Chat rooms for 2 persons.
 - Chat rooms for more than 2 persons.
