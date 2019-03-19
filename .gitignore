@@ -1,0 +1,10 @@
+Debug/*
+Release/*
+ipch/*
+CN-assignment-1.sdf
+CN-assignment-1.sln
+CN-assignment-1.v12.suo
+
+Server/Debug/*
+Server/Server.vcxproj
+Server/Server.vcxproj.filters
