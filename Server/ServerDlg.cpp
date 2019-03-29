@@ -3,6 +3,14 @@
 #include "ServerDlg.h"
 #include "afxdialogex.h"
 #include "helper.h"
+#include <cstdint>
+
+#pragma pack(1)
+
+struct UserList {
+    int count;
+    char list[30][20];
+};
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -99,6 +107,15 @@ void CServerDlg::OnBnClickedOk() {
     clientList.clear();
 }
 
+void CServerDlg::fetchAllUsername(char *ans) {
+    UserList list;
+    list.count = clientList.size();
+    for (int i = 0; i < list.count; ++i) {
+        strcpy(list.list[i], clientList[i].username);
+    }
+    memcpy(ans, (char*) &list, sizeof(UserList));
+}
+
 void CServerDlg::sendToAll(Message msg) {
     for (int i = 0; i < (int)clientList.size(); ++i) {
         Client client = clientList[i];
@@ -113,10 +130,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
     }
     switch (WSAGETSELECTEVENT(lParam)) {
         case FD_ACCEPT: {
-            Client client;
-            client.socket = accept(wParam, NULL, NULL);
-            memset(client.username, 0, sizeof client.username);
-            clientList.push_back(client);                       
+            accept(wParam, NULL, NULL);
             break;
         }
         case FD_READ: {
@@ -128,27 +142,47 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 char str[1000];
                 sprintf(str, "User %s logged in.", auth.username);
                 logs.AddString(CString(str));
-                
+
                 Message res;
                 strcpy(res.action, "login-response");
                 strcpy(res.content, "OK");
                 sendTo(wParam, res);
-            } else {
-                char sender[20] = { 0 };
-                for (int i = 0; i < (int)clientList.size(); ++i) {
-                    if (clientList[i].socket == wParam) {
-                        strcpy(sender, clientList[i].username);
-                        break;
-                    }
+                return 0;
+            }
+            if (strcmp(msg.action, "re-login") == 0) {
+                Client client;
+                client.socket = wParam;
+                strcpy(client.username, msg.content);
+                clientList.push_back(client);
+
+                char str[1000];
+                sprintf(str, "User %s logged in.", client.username);
+
+                Message announcement;
+                strcpy(announcement.action, "message-all");
+                strcpy(announcement.content, str);
+                sendToAll(announcement);
+
+                fetchAllUsername(str);
+                strcpy(announcement.action, "new-user");
+                memcpy(announcement.content, str, sizeof str);
+                sendToAll(announcement);
+                return 0;
+            }
+            char sender[20] = { 0 };
+            for (int i = 0; i < (int)clientList.size(); ++i) {
+                if (clientList[i].socket == wParam) {
+                    strcpy(sender, clientList[i].username);
+                    break;
                 }
-                if (strcmp("message-all", msg.action) == 0) {
-                    char str[1000];
-                    sprintf(str, "%s: %s", sender, msg.content);
-                    logs.AddString(CString(str));
-                    strcpy(msg.action, "message-all");
-                    strcpy(msg.content, str);
-                    sendToAll(msg);
-                }
+            }
+            if (strcmp("message-all", msg.action) == 0) {
+                char str[1000];
+                sprintf(str, "%s: %s", sender, msg.content);
+                logs.AddString(CString(str));
+                strcpy(msg.action, "message-all");
+                strcpy(msg.content, str);
+                sendToAll(msg);
             }
             break;
         }

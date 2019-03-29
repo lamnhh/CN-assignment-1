@@ -8,7 +8,7 @@ class CClientDlg : public CDialogEx
 {
 // Construction
 public:
-	CClientDlg(CWnd* pParent = NULL);	// standard constructor
+	CClientDlg(char username[20], CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
 	enum { IDD = IDD_CLIENT_DIALOG };
@@ -27,6 +27,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 
+    char username[20];
     SOCKET client;
     SOCKADDR_IN serverAddress;
 

@@ -6,6 +6,13 @@
 #include "Client.h"
 #include "ClientDlg.h"
 #include "afxdialogex.h"
+#include <cstdint>
+#pragma pack(1)
+
+struct UserList {
+    int count;
+    char list[30][20];
+};
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -13,10 +20,11 @@
 
 // CClientDlg dialog
 
-CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
+CClientDlg::CClientDlg(char username[20], CWnd* pParent /*=NULL*/)
 	: CDialogEx(CClientDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+    strcpy(this->username, username);
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -44,7 +52,7 @@ BOOL CClientDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
-
+    
 	// TODO: Add extra initialization here
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
@@ -62,6 +70,12 @@ BOOL CClientDlg::OnInitDialog()
         return TRUE;
     }
     WSAAsyncSelect(client, m_hWnd, WM_SOCKET, FD_READ | FD_CLOSE);
+
+
+    Message msg;
+    strcpy(msg.action, "re-login");
+    strcpy(msg.content, this->username);
+    sendTo(client, msg);
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
@@ -111,6 +125,7 @@ HCURSOR CClientDlg::OnQueryDragIcon()
 void CClientDlg::OnBnClickedOk() {
     CString message;
     GetDlgItemText(IDC_EDIT1, message);
+    SetDlgItemText(IDC_EDIT1, CString(""));
     
     Message msg;
     strcpy(msg.action, "message-all");
@@ -132,7 +147,12 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp(msg.action, "message-all") == 0) {
                 logs.AddString(CString(msg.content));
             } else if (strcmp(msg.action, "new-user") == 0) {
-                userListBox.AddString(CString(msg.content));
+                UserList list;
+                memcpy(&list, msg.content, sizeof msg.content);
+                userListBox.ResetContent();
+                for (int i = 0; i < list.count; ++i) {
+                    userListBox.AddString(CString(list.list[i]));
+                }
             }
             break;
         }

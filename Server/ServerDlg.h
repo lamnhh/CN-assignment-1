@@ -37,6 +37,7 @@ protected:
 
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
 
+    void fetchAllUsername(char*);
     void sendToAll(Message msg);
 
 public:
