@@ -7,6 +7,9 @@
 #include "ClientDlg.h"
 #include "afxdialogex.h"
 #include <cstdint>
+#include <algorithm>
+using namespace std;
+
 #pragma pack(1)
 
 struct UserList {
@@ -25,6 +28,7 @@ CClientDlg::CClientDlg(char username[20], CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
     strcpy(this->username, username);
+    currentRoom = CString("General");
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX)
@@ -39,6 +43,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
     ON_MESSAGE(WM_SOCKET, handleEvents)
     ON_BN_CLICKED(IDOK, &CClientDlg::OnBnClickedOk)
+    ON_LBN_SELCHANGE(IDC_LIST2, &CClientDlg::OnLbnSelchangeList2)
 END_MESSAGE_MAP()
 
 
@@ -122,16 +127,36 @@ HCURSOR CClientDlg::OnQueryDragIcon()
 ********************************************************************
 ********************************************************************/
 
+struct PrivateMessage {
+    char receiver[20];
+    char message[980];
+};
+
 void CClientDlg::OnBnClickedOk() {
     CString message;
     GetDlgItemText(IDC_EDIT1, message);
     SetDlgItemText(IDC_EDIT1, CString(""));
     
     Message msg;
-    strcpy(msg.action, "message-all");
-    strcpy(msg.content, convertToChar(message));
+    if (currentRoom == CString("General")) {
+        strcpy(msg.action, "message-all");
+        strcpy(msg.content, convertToChar(message));
+    } else {
+        static PrivateMessage pvt;
+        strcpy(pvt.receiver, convertToChar(currentRoom));
+        strcpy(pvt.message, convertToChar(message));
+        
+        strcpy(msg.action, "message-one");
+        memcpy(msg.content, (char*) &pvt, sizeof pvt);
+    }
+    sendTo(client, msg);
+}
 
-    send(client, (char*) &msg, sizeof msg, 0);
+void CClientDlg::fetchMessageList(MessageList list) {
+    logs.ResetContent();
+    for (int i = 0; i < (int)list.size(); ++i) {
+        logs.AddString(list[i]);
+    }
 }
 
 LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
@@ -145,17 +170,45 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             receive(wParam, msg);
 
             if (strcmp(msg.action, "message-all") == 0) {
-                logs.AddString(CString(msg.content));
+                messageList[CString("General")].push_back(CString(msg.content));
+                fetchMessageList(messageList[CString("General")]);
+            } else if (strcmp(msg.action, "message-one") == 0) {
+                PrivateMessage pvt;
+                memcpy(&pvt, msg.content, sizeof msg.content);
+                messageList[CString(pvt.receiver)].push_back(CString(pvt.message));
+                fetchMessageList(messageList[CString(pvt.receiver)]);
             } else if (strcmp(msg.action, "new-user") == 0) {
                 UserList list;
                 memcpy(&list, msg.content, sizeof msg.content);
-                userListBox.ResetContent();
+
+
+                vector<CString> userList;
                 for (int i = 0; i < list.count; ++i) {
-                    userListBox.AddString(CString(list.list[i]));
+                    userList.push_back(CString(list.list[i]));
+                }
+                sort(userList.begin(), userList.end());
+                userList.insert(userList.begin(), CString("----------------------------"));
+                userList.insert(userList.begin(), CString("General"));
+
+                userListBox.ResetContent();
+                for (CString str: userList) {
+                    userListBox.AddString(str);
                 }
             }
             break;
         }
     }
     return 0;
+}
+
+void CClientDlg::OnLbnSelchangeList2() {
+    CString receiver;
+    userListBox.GetText(userListBox.GetCurSel(), receiver);
+    if (receiver == CString("----------------------------")) {
+        return;
+    }
+    
+    MessageList list = messageList[receiver];
+    fetchMessageList(list);
+    currentRoom = receiver;
 }

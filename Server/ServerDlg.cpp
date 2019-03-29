@@ -184,6 +184,43 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 strcpy(msg.content, str);
                 sendToAll(msg);
             }
+            if (strcmp("message-one", msg.action) == 0) {
+                struct PrivateMessage {
+                    char receiver[20];
+                    char message[980];
+                } pvt1;
+                memcpy(&pvt1, msg.content, sizeof pvt1);
+
+                SOCKET sender = wParam;
+                SOCKET receiver;                
+                for (int i = 0; i < (int)clientList.size(); ++i) {
+                    if (strcmp(clientList[i].username, pvt1.receiver) == 0) {
+                        receiver = clientList[i].socket;
+                        break;
+                    }
+                }
+
+                PrivateMessage pvt2;
+                char str[980];
+                for (int i = 0; i < (int)clientList.size(); ++i) {
+                    if (clientList[i].socket == sender) {
+                        strcpy(pvt2.receiver, clientList[i].username);
+                        sprintf(str, "%s: %s", clientList[i].username, pvt1.message);
+                        strcpy(pvt1.message, str);
+                        break;
+                    }
+                }
+                strcpy(pvt2.message, pvt1.message);
+
+                Message msg;
+                strcpy(msg.action, "message-one");
+                memcpy(msg.content, &pvt1, sizeof pvt1);
+                sendTo(sender, msg);
+                
+                strcpy(msg.action, "message-one");
+                memcpy(&msg.content, &pvt2, sizeof pvt2);
+                sendTo(receiver, msg);
+            }
             break;
         }
     }

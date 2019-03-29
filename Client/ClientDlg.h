@@ -2,6 +2,11 @@
 #include <afxsock.h>
 #include "afxwin.h"
 #include "helper.h"
+#include <vector>
+#include <map>
+using namespace std;
+
+typedef vector<CString> MessageList;
 
 // CClientDlg dialog
 class CClientDlg : public CDialogEx
@@ -31,9 +36,15 @@ protected:
     SOCKET client;
     SOCKADDR_IN serverAddress;
 
+    map<CString, MessageList> messageList;
+    CString currentRoom;
+
+    void fetchMessageList(MessageList list);
+
 public:
     afx_msg void OnBnClickedOk();
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
     CListBox logs;
     CListBox userListBox;
+    afx_msg void OnLbnSelchangeList2();
 };
