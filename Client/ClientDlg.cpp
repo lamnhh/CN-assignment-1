@@ -159,6 +159,19 @@ void CClientDlg::fetchMessageList(MessageList list) {
     }
 }
 
+void CClientDlg::fetchUserList() {
+    userListBox.ResetContent();
+    for (int i = 0; i < (int)userList.size(); ++i) {
+        char str[1000];
+        if (userList[i].second > 0) {
+            sprintf(str, "%s (%d)", convertToChar(userList[i].first), userList[i].second);
+        } else {
+            sprintf(str, "%s", convertToChar(userList[i].first));
+        }
+        userListBox.AddString(CString(str));
+    }
+}
+
 LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
     if (WSAGETSELECTERROR(lParam)) {
         closesocket(wParam);
@@ -171,29 +184,54 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 
             if (strcmp(msg.action, "message-all") == 0) {
                 messageList[CString("General")].push_back(CString(msg.content));
-                fetchMessageList(messageList[CString("General")]);
+                if (currentRoom != CString("General")) {
+                    userList[0].second += 1;
+                    fetchUserList();
+                } else {
+                    fetchMessageList(messageList[CString("General")]);
+                }
             } else if (strcmp(msg.action, "message-one") == 0) {
                 PrivateMessage pvt;
                 memcpy(&pvt, msg.content, sizeof msg.content);
                 messageList[CString(pvt.receiver)].push_back(CString(pvt.message));
-                fetchMessageList(messageList[CString(pvt.receiver)]);
-            } else if (strcmp(msg.action, "new-user") == 0) {
+                if (currentRoom != pvt.receiver) {
+                    CString sender(pvt.receiver);
+                    for (int i = 0; i < (int)userList.size(); ++i) {
+                        if (userList[i].first == sender) {
+                            userList[i].second += 1;
+                            break;
+                        }
+                    }
+                    fetchUserList();
+                } else {
+                    fetchMessageList(messageList[CString(pvt.receiver)]);
+                }
+            } else if (strcmp(msg.action, "user-list") == 0) {
                 UserList list;
                 memcpy(&list, msg.content, sizeof msg.content);
 
-
-                vector<CString> userList;
+                userList.clear();
                 for (int i = 0; i < list.count; ++i) {
-                    userList.push_back(CString(list.list[i]));
+                    userList.push_back(make_pair(CString(list.list[i]), 0));
                 }
                 sort(userList.begin(), userList.end());
-                userList.insert(userList.begin(), CString("----------------------------"));
-                userList.insert(userList.begin(), CString("General"));
+                userList.insert(userList.begin(), make_pair(CString("----------------------------"), -1));
+                userList.insert(userList.begin(), make_pair(CString("General"), 0));
 
                 userListBox.ResetContent();
-                for (CString str: userList) {
-                    userListBox.AddString(str);
+                for (int i = 0; i < (int)userList.size(); ++i) {
+                    userListBox.AddString(userList[i].first);
                 }
+            } else if (strcmp(msg.action, "new-user") == 0) {
+                int countGeneral = userList[0].second;
+                userList.erase(userList.begin(), userList.begin() + 2);
+                userList.push_back(make_pair(CString(msg.content), 0));
+                sort(userList.begin(), userList.end());
+                
+                userList.insert(userList.begin(), make_pair(CString("----------------------------"), -1));
+                userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
+
+                fetchUserList();
             }
             break;
         }
@@ -208,7 +246,26 @@ void CClientDlg::OnLbnSelchangeList2() {
         return;
     }
     
-    MessageList list = messageList[receiver];
+    char *str = convertToChar(receiver);
+    string tmp(str, str + strlen(str));
+    string username = "";
+    for (int i = 0; i < (int)tmp.size(); ++i) {
+        if (tmp[i] == ' ') {
+            break;
+        }
+        username += tmp[i];
+    }
+
+    CString cusername(username.c_str());
+    for (int i = 0; i < (int)userList.size(); ++i) {
+        if (userList[i].first == cusername) {
+            userList[i].second = 0;
+            break;
+        }
+    }
+    fetchUserList();
+    
+    MessageList list = messageList[cusername];
     fetchMessageList(list);
-    currentRoom = receiver;
+    currentRoom = cusername;
 }

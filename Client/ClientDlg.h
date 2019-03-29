@@ -4,6 +4,7 @@
 #include "helper.h"
 #include <vector>
 #include <map>
+#include <utility>
 using namespace std;
 
 typedef vector<CString> MessageList;
@@ -38,8 +39,10 @@ protected:
 
     map<CString, MessageList> messageList;
     CString currentRoom;
+    vector<pair<CString, int>> userList;
 
     void fetchMessageList(MessageList list);
+    void fetchUserList();
 
 public:
     afx_msg void OnBnClickedOk();

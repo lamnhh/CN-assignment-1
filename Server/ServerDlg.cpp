@@ -153,20 +153,25 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 Client client;
                 client.socket = wParam;
                 strcpy(client.username, msg.content);
+                
+                Message announcement;
+                strcpy(announcement.action, "new-user");
+                strcpy(announcement.content, client.username);
+                sendToAll(announcement);
+
                 clientList.push_back(client);
 
                 char str[1000];
                 sprintf(str, "User %s logged in.", client.username);
 
-                Message announcement;
                 strcpy(announcement.action, "message-all");
                 strcpy(announcement.content, str);
                 sendToAll(announcement);
 
                 fetchAllUsername(str);
-                strcpy(announcement.action, "new-user");
+                strcpy(announcement.action, "user-list");
                 memcpy(announcement.content, str, sizeof str);
-                sendToAll(announcement);
+                sendTo(wParam, announcement);
                 return 0;
             }
             char sender[20] = { 0 };
