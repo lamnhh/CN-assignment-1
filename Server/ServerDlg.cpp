@@ -11,10 +11,7 @@
 #define new DEBUG_NEW
 #endif
 
-int Client::count = 0;
-
 // CServerDlg dialog
-
 CServerDlg::CServerDlg(CWnd *pParent): CDialogEx(CServerDlg::IDD, pParent) {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -30,7 +27,6 @@ BEGIN_MESSAGE_MAP(CServerDlg, CDialogEx)
     ON_MESSAGE(WM_SOCKET, handleEvents)
     ON_BN_CLICKED(IDOK, &CServerDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
-
 
 // CServerDlg message handlers
 BOOL CServerDlg::OnInitDialog() {
@@ -77,12 +73,20 @@ HCURSOR CServerDlg::OnQueryDragIcon() {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+/*******************************************************************
+********************************************************************
+ * MY OWN CODE
+********************************************************************
+********************************************************************/
+
+int Client::count = 0;
+
 void CServerDlg::OnBnClickedOk() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
         return;
     }
-
     UpdateData();
     server = socket(AF_INET, SOCK_STREAM, 0);
     serverAddress.sin_family = AF_INET;
@@ -95,7 +99,6 @@ void CServerDlg::OnBnClickedOk() {
     if (err) {
         MessageBox(LPCTSTR(L"Can't call"));
     }
-
     clientList.clear();
 }
 
@@ -127,7 +130,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             clientList.push_back(client);
             
             char str[1000];
-            sprintf(str, "User %d just logged in", client.id, client.id);
+            sprintf(str, "User %d just logged in", client.id);
             logs.AddString(CString(str));
 
             Message msg;
@@ -138,7 +141,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
         case FD_READ: {
             Message msg;
             receive(wParam, msg);
-
             int senderID = 0;
             for (int i = 0; i < (int)clientList.size(); ++i) {
                 if (clientList[i].socket == wParam) {
@@ -146,7 +148,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                     break;
                 }
             }
-
             if (strcmp("message", msg.action) == 0) {
                 char str[1000];
                 sprintf(str, "%d: %s", senderID, msg.content);
@@ -154,25 +155,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 strcpy(msg.content, str);
                 sendToAll(msg);
             }
-            break;
-        }
-        case FD_CLOSE: {
-            int senderID = 0, pos = -1;
-            for (int i = 0; i < (int)clientList.size(); ++i) {
-                if (clientList[i].socket == wParam) {
-                    senderID = clientList[i].id;
-                    pos = i;
-                    break;
-                }
-            }
-            clientList.erase(clientList.begin() + pos);
-            char str[1000];
-            sprintf(str, "User %d logged out", senderID);
-            logs.AddString(CString(str));
-
-            Message msg;
-            strcpy(msg.content, str);
-            sendToAll(msg);
             break;
         }
     }
