@@ -19,3 +19,4 @@ struct Auth {
 void sendTo(SOCKET socket, Message &msg);
 void receive(SOCKET socket, Message &msg);
 char* convertToChar(const CString &s);
+CString unicode(char *str);

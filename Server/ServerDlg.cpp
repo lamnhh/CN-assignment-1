@@ -141,7 +141,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 memcpy(&auth, (char*) &msg.content, sizeof msg.content);
                 char str[1000];
                 sprintf(str, "User %s logged in.", auth.username);
-                logs.AddString(CString(str));
+                logs.AddString(unicode(str));
 
                 Message res;
                 strcpy(res.action, "login-response");
@@ -184,7 +184,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp("message-all", msg.action) == 0) {
                 char str[1000];
                 sprintf(str, "%s: %s", sender, msg.content);
-                logs.AddString(CString(str));
+                logs.AddString(unicode(str));
                 strcpy(msg.action, "message-all");
                 strcpy(msg.content, str);
                 sendToAll(msg);

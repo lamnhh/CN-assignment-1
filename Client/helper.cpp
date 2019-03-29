@@ -10,9 +10,10 @@ void receive(SOCKET socket, Message &msg) {
 }
 
 char* convertToChar(const CString &s) {
-	int nSize = s.GetLength();
-	char *pAnsiString = new char[nSize+1];
-	memset(pAnsiString,0,nSize+1);
-	wcstombs(pAnsiString, s, nSize+1);
-	return pAnsiString;
+	CStringA utf8 = CW2A(s, CP_UTF8);
+    return _strdup(utf8);
+}
+
+CString unicode(char *str) {
+    return (LPCTSTR)CA2W(str, CP_UTF8);
 }

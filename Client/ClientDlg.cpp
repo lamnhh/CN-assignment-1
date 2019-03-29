@@ -183,7 +183,7 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             receive(wParam, msg);
 
             if (strcmp(msg.action, "message-all") == 0) {
-                messageList[CString("General")].push_back(CString(msg.content));
+                messageList[CString("General")].push_back(unicode(msg.content));
                 if (currentRoom != CString("General")) {
                     userList[0].second += 1;
                     fetchUserList();
@@ -193,7 +193,7 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             } else if (strcmp(msg.action, "message-one") == 0) {
                 PrivateMessage pvt;
                 memcpy(&pvt, msg.content, sizeof msg.content);
-                messageList[CString(pvt.receiver)].push_back(CString(pvt.message));
+                messageList[CString(pvt.receiver)].push_back(unicode(pvt.message));
                 if (currentRoom != pvt.receiver) {
                     CString sender(pvt.receiver);
                     for (int i = 0; i < (int)userList.size(); ++i) {
