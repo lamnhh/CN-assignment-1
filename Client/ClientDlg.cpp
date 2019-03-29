@@ -11,10 +11,7 @@
 #define new DEBUG_NEW
 #endif
 
-
 // CClientDlg dialog
-
-
 
 CClientDlg::CClientDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CClientDlg::IDD, pParent)
@@ -89,6 +86,14 @@ HCURSOR CClientDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
+
+
+/*******************************************************************
+********************************************************************
+ * MY OWN CODE
+********************************************************************
+********************************************************************/
+
 
 char* convertToChar(const CString &s) {
 	int nSize = s.GetLength();
