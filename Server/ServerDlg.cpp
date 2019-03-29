@@ -1,11 +1,8 @@
-
-// ServerDlg.cpp : implementation file
-//
-
 #include "stdafx.h"
 #include "Server.h"
 #include "ServerDlg.h"
 #include "afxdialogex.h"
+#include "helper.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -80,8 +77,6 @@ HCURSOR CServerDlg::OnQueryDragIcon() {
 ********************************************************************
 ********************************************************************/
 
-int Client::count = 0;
-
 void CServerDlg::OnBnClickedOk() {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
@@ -97,17 +92,11 @@ void CServerDlg::OnBnClickedOk() {
 
     int err = WSAAsyncSelect(server, m_hWnd, WM_SOCKET, FD_READ | FD_ACCEPT | FD_CLOSE);
     if (err) {
-        MessageBox(LPCTSTR(L"Can't call"));
+        return;
     }
+
+    logs.AddString(CString("Connection created. Listening."));
     clientList.clear();
-}
-
-void CServerDlg::sendTo(SOCKET socket, Message msg) {
-    send(socket, (char*) &msg, sizeof msg, 0);
-}
-
-void CServerDlg::receive(SOCKET socket, Message &msg) {
-    recv(socket, (char*) &msg, sizeof msg, 0);
 }
 
 void CServerDlg::sendToAll(Message msg) {
@@ -126,34 +115,40 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
         case FD_ACCEPT: {
             Client client;
             client.socket = accept(wParam, NULL, NULL);
-            client.id = ++Client::count;
-            clientList.push_back(client);
-            
-            char str[1000];
-            sprintf(str, "User %d just logged in", client.id);
-            logs.AddString(CString(str));
-
-            Message msg;
-            strcpy(msg.content, str);
-            sendToAll(msg);
+            memset(client.username, 0, sizeof client.username);
+            clientList.push_back(client);                       
             break;
         }
         case FD_READ: {
             Message msg;
             receive(wParam, msg);
-            int senderID = 0;
-            for (int i = 0; i < (int)clientList.size(); ++i) {
-                if (clientList[i].socket == wParam) {
-                    senderID = clientList[i].id;
-                    break;
-                }
-            }
-            if (strcmp("message", msg.action) == 0) {
+            if (strcmp(msg.action, "login") == 0 || strcmp(msg.action, "register") == 0) {
+                Auth auth;
+                memcpy(&auth, (char*) &msg.content, sizeof msg.content);
                 char str[1000];
-                sprintf(str, "%d: %s", senderID, msg.content);
+                sprintf(str, "User %s logged in.", auth.username);
                 logs.AddString(CString(str));
-                strcpy(msg.content, str);
-                sendToAll(msg);
+                
+                Message res;
+                strcpy(res.action, "login-response");
+                strcpy(res.content, "OK");
+                sendTo(wParam, res);
+            } else {
+                char sender[20] = { 0 };
+                for (int i = 0; i < (int)clientList.size(); ++i) {
+                    if (clientList[i].socket == wParam) {
+                        strcpy(sender, clientList[i].username);
+                        break;
+                    }
+                }
+                if (strcmp("message-all", msg.action) == 0) {
+                    char str[1000];
+                    sprintf(str, "%s: %s", sender, msg.content);
+                    logs.AddString(CString(str));
+                    strcpy(msg.action, "message-all");
+                    strcpy(msg.content, str);
+                    sendToAll(msg);
+                }
             }
             break;
         }

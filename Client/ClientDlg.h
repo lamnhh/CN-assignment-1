@@ -1,19 +1,7 @@
-
-// ClientDlg.h : header file
-//
-
 #pragma once
-#pragma pack(1)
 #include <afxsock.h>
 #include "afxwin.h"
-
-#define PORT 25000
-#define WM_SOCKET (WM_USER + 2)
-
-struct Message {
-    char action[30];
-    char content[70];
-};
+#include "helper.h"
 
 // CClientDlg dialog
 class CClientDlg : public CDialogEx
@@ -42,13 +30,9 @@ protected:
     SOCKET client;
     SOCKADDR_IN serverAddress;
 
-    void sendTo(SOCKET socket, Message msg);
-    void receive(SOCKET socket, Message &msg);
-
 public:
     afx_msg void OnBnClickedOk();
-    afx_msg void OnBnClickedButton1();
-    afx_msg void OnBnClickedCancel();
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
     CListBox logs;
+    CListBox userListBox;
 };

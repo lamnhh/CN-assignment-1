@@ -1,45 +1,27 @@
-
-// ServerDlg.h : header file
-//
-
 #pragma once
-#pragma pack(1)
 
 #include "afxwin.h"
 #include <afxsock.h>
 #include <vector>
 #include <string>
+#include "helper.h"
 using namespace std;
-
-#define PORT 25000
-#define WM_SOCKET (WM_USER + 1)
-
-struct Message {
-    char action[30];
-    char content[70];
-};
 
 struct Client {
     SOCKET socket;
-    int id;
-    static int count;
+    char username[20];
 };
 
-// CServerDlg dialog
 class CServerDlg : public CDialogEx
 {
-// Construction
 public:
-	CServerDlg(CWnd* pParent = NULL);	// standard constructor
+	CServerDlg(CWnd* pParent = NULL);
 
-// Dialog Data
 	enum { IDD = IDD_SERVER_DIALOG };
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);
 
-
-// Implementation
 protected:
 	HICON m_hIcon;
 
@@ -53,8 +35,6 @@ protected:
     SOCKADDR_IN serverAddress;
     vector<Client> clientList;
 
-    void sendTo(SOCKET socket, Message msg);
-    void receive(SOCKET socket, Message &msg);
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
 
     void sendToAll(Message msg);
