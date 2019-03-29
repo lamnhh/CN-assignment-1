@@ -162,7 +162,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 clientList.push_back(client);
 
                 char str[1000];
-                sprintf(str, "User %s logged in.", client.username);
+                sprintf(str, "%s joined the chat.", client.username);
 
                 strcpy(announcement.action, "message-all");
                 strcpy(announcement.content, str);
@@ -222,10 +222,37 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 memcpy(msg.content, &pvt1, sizeof pvt1);
                 sendTo(sender, msg);
                 
-                strcpy(msg.action, "message-one");
-                memcpy(&msg.content, &pvt2, sizeof pvt2);
-                sendTo(receiver, msg);
+                if (sender != receiver) {
+                    strcpy(msg.action, "message-one");
+                    memcpy(&msg.content, &pvt2, sizeof pvt2);
+                    sendTo(receiver, msg);
+                }
             }
+            break;
+        }
+        case FD_CLOSE: {
+            int pos = -1;
+            char username[20];
+            for (int i = 0; i < (int)clientList.size(); ++i) {
+                if (clientList[i].socket == wParam) {
+                    pos = i;
+                    strcpy(username, clientList[i].username);
+                    break;
+                }
+            }
+            clientList.erase(clientList.begin() + pos);
+
+            Message msg;
+            char str[1000];
+            sprintf(str, "%s left the chat.", username);
+            logs.AddString(unicode(str));
+            strcpy(msg.action, "message-all");
+            strcpy(msg.content, str);
+            sendToAll(msg);
+
+            strcpy(msg.action, "user-logout");
+            strcpy(msg.content, username);
+            sendToAll(msg);
             break;
         }
     }

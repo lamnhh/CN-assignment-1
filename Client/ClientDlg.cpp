@@ -232,6 +232,17 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
 
                 fetchUserList();
+            } else if (strcmp(msg.action, "user-logout") == 0) {
+                CString username(msg.content);
+                int pos = -1;
+                for (int i = 0; i < (int)userList.size(); ++i) {
+                    if (userList[i].first == username) {
+                        pos = i;
+                        break;
+                    }
+                }
+                userList.erase(userList.begin() + pos);
+                fetchUserList();
             }
             break;
         }
@@ -268,4 +279,12 @@ void CClientDlg::OnLbnSelchangeList2() {
     MessageList list = messageList[cusername];
     fetchMessageList(list);
     currentRoom = cusername;
+}
+
+
+void CClientDlg::OnCancel()
+{
+    // TODO: Add your specialized code here and/or call the base class
+    closesocket(client);
+    CDialogEx::OnCancel();
 }

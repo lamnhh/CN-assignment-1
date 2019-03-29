@@ -50,4 +50,5 @@ public:
     CListBox logs;
     CListBox userListBox;
     afx_msg void OnLbnSelchangeList2();
+    virtual void OnCancel();
 };
