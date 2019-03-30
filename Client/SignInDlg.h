@@ -1,5 +1,6 @@
 #pragma once
 #include <afxsock.h>
+#include "helper.h"
 
 // SignInDlg dialog
 
@@ -25,7 +26,12 @@ protected:
     SOCKADDR_IN serverAddress;
     char username[20];
 
+    Auth getAuthInfo();
+    void connectToServer();
+
 public:
     afx_msg void OnBnClickedOk();
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
+    afx_msg void OnBnClickedButton1();
+    virtual void OnCancel();
 };

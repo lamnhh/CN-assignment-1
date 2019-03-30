@@ -12,6 +12,12 @@ struct Client {
     char username[20];
 };
 
+struct AuthInfo {
+    CString username;
+    CString password;
+    bool loggedIn;
+};
+
 class CServerDlg : public CDialogEx
 {
 public:
@@ -34,6 +40,7 @@ protected:
     SOCKET server;
     SOCKADDR_IN serverAddress;
     vector<Client> clientList;
+    vector<AuthInfo> authList;
 
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
 

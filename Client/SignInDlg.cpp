@@ -5,7 +5,6 @@
 #include "Client.h"
 #include "SignInDlg.h"
 #include "afxdialogex.h"
-#include "helper.h"
 #include "ClientDlg.h"
 
 
@@ -28,12 +27,13 @@ void SignInDlg::DoDataExchange(CDataExchange* pDX) {
 BEGIN_MESSAGE_MAP(SignInDlg, CDialogEx)
     ON_BN_CLICKED(IDOK, &SignInDlg::OnBnClickedOk)
     ON_MESSAGE(WM_SOCKET, handleEvents)
+    ON_BN_CLICKED(IDC_BUTTON1, &SignInDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
 // SignInDlg message handlers
 
-void SignInDlg::OnBnClickedOk() {
+void SignInDlg::connectToServer() {
     if (isConnected == false) {
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
@@ -53,7 +53,9 @@ void SignInDlg::OnBnClickedOk() {
         isConnected = true;
         WSAAsyncSelect(client, m_hWnd, WM_SOCKET, FD_READ | FD_CLOSE);
     }
+}
 
+Auth SignInDlg::getAuthInfo() {
     CString username;
     CString password;
     GetDlgItemText(IDC_EDIT1, username);
@@ -63,9 +65,23 @@ void SignInDlg::OnBnClickedOk() {
     strcpy(auth.username, convertToChar(username));
     strcpy(auth.password, convertToChar(password));    
     strcpy(this->username, convertToChar(username));
+    return auth;
+}
 
+void SignInDlg::OnBnClickedOk() {
+    connectToServer();
+    Auth auth = getAuthInfo();
     Message msg;
     strcpy(msg.action, "login");
+    memcpy(msg.content, (char*) &auth, sizeof auth);
+    sendTo(client, msg);
+}
+
+void SignInDlg::OnBnClickedButton1() {
+    connectToServer();
+    Auth auth = getAuthInfo();
+    Message msg;
+    strcpy(msg.action, "register");
     memcpy(msg.content, (char*) &auth, sizeof auth);
     sendTo(client, msg);
 }
@@ -85,10 +101,19 @@ LRESULT SignInDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                     ShowWindow(SW_HIDE);
                     dlg.DoModal();
                     EndDialog(0);
+                } else {
+                    MessageBox(CString(msg.content));
                 }
             }
             break;
         }
     }
     return 0;
+}
+
+void SignInDlg::OnCancel() {
+    if (isConnected) {
+        closesocket(client);
+    }
+    CDialogEx::OnCancel();
 }

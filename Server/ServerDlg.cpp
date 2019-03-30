@@ -138,9 +138,68 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             receive(wParam, msg);
             if (strcmp(msg.action, "login") == 0 || strcmp(msg.action, "register") == 0) {
                 Auth auth;
-                memcpy(&auth, (char*) &msg.content, sizeof msg.content);
+                memcpy(&auth, (char*) &msg.content, sizeof auth);
+
+                if (strcmp(msg.action, "login") == 0) {
+                    bool doesUserExist = false;
+                    bool doesPassMatch = false;
+                    bool loggedIn = false;
+                    for (int i = 0; i < (int)authList.size(); ++i) {
+                        if (authList[i].username == unicode(auth.username)) {
+                            doesUserExist = true;
+                            doesPassMatch = authList[i].password == unicode(auth.password);
+                            loggedIn = authList[i].loggedIn;
+                            break;
+                        }
+                    }
+                    if (!doesUserExist) {
+                        Message res;
+                        strcpy(res.action, "login-response");
+                        strcpy(res.content, "No such user");
+                        sendTo(wParam, res);
+                        return 0;
+                    }
+                    if (!doesPassMatch) {
+                        Message res;
+                        strcpy(res.action, "login-response");
+                        strcpy(res.content, "Wrong password");
+                        sendTo(wParam, res);
+                        return 0;
+                    }
+                    if (loggedIn) {
+                        Message res;
+                        strcpy(res.action, "login-response");
+                        strcpy(res.content, "User already logged in");
+                        sendTo(wParam, res);
+                        return 0;
+                    }
+                } else {
+                    bool found = false;
+                    for (int i = 0; i < (int)authList.size(); ++i) {
+                        if (authList[i].username == unicode(auth.username)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        Message res;
+                        strcpy(res.action, "login-response");
+                        strcpy(res.content, "Username already used");
+                        sendTo(wParam, res);
+                        return 0;
+                    }
+                    authList.push_back({ unicode(auth.username), unicode(auth.password), false });
+                }
+
+                for (int i = 0; i < (int)authList.size(); ++i) {
+                    if (authList[i].username == unicode(auth.username)) {
+                        authList[i].loggedIn = true;
+                        break;
+                    }
+                }
+
                 char str[1000];
-                sprintf(str, "User %s logged in.", auth.username);
+                sprintf(str, "User %s %s.", auth.username, strcmp(msg.action, "login") == 0 ? "logged in" : "registered");
                 logs.AddString(unicode(str));
 
                 Message res;
@@ -240,7 +299,17 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                     break;
                 }
             }
+            if (pos == -1) {
+                return 0;
+            }
             clientList.erase(clientList.begin() + pos);
+
+            for (int i = 0; i < (int)authList.size(); ++i) {
+                if (authList[i].username == unicode(username)) {
+                    authList[i].loggedIn = false;
+                    break;
+                }
+            }
 
             Message msg;
             char str[1000];
