@@ -6,6 +6,7 @@
 #include "Client.h"
 #include "ClientDlg.h"
 #include "afxdialogex.h"
+#include "SignInDlg.h"
 #include <cstdint>
 #include <algorithm>
 using namespace std;
@@ -44,6 +45,7 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
     ON_MESSAGE(WM_SOCKET, handleEvents)
     ON_BN_CLICKED(IDOK, &CClientDlg::OnBnClickedOk)
     ON_LBN_SELCHANGE(IDC_LIST2, &CClientDlg::OnLbnSelchangeList2)
+    ON_BN_CLICKED(IDC_BUTTON1, &CClientDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -215,7 +217,7 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                     userList.push_back(make_pair(CString(list.list[i]), 0));
                 }
                 sort(userList.begin(), userList.end());
-                userList.insert(userList.begin(), make_pair(CString("----------------------------"), -1));
+                userList.insert(userList.begin(), make_pair(CString("---------------"), -1));
                 userList.insert(userList.begin(), make_pair(CString("General"), 0));
 
                 userListBox.ResetContent();
@@ -228,7 +230,7 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 userList.push_back(make_pair(CString(msg.content), 0));
                 sort(userList.begin(), userList.end());
                 
-                userList.insert(userList.begin(), make_pair(CString("----------------------------"), -1));
+                userList.insert(userList.begin(), make_pair(CString("---------------"), -1));
                 userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
 
                 fetchUserList();
@@ -253,7 +255,7 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 void CClientDlg::OnLbnSelchangeList2() {
     CString receiver;
     userListBox.GetText(userListBox.GetCurSel(), receiver);
-    if (receiver == CString("----------------------------")) {
+    if (receiver == CString("---------------")) {
         return;
     }
     
@@ -287,4 +289,14 @@ void CClientDlg::OnCancel()
     // TODO: Add your specialized code here and/or call the base class
     closesocket(client);
     CDialogEx::OnCancel();
+}
+
+
+void CClientDlg::OnBnClickedButton1()
+{
+    // TODO: Add your control notification handler code here
+    closesocket(client);
+    SignInDlg dlg;
+    EndDialog(0);
+    dlg.DoModal();
 }

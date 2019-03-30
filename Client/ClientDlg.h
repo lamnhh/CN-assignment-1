@@ -51,4 +51,5 @@ public:
     CListBox userListBox;
     afx_msg void OnLbnSelchangeList2();
     virtual void OnCancel();
+    afx_msg void OnBnClickedButton1();
 };

@@ -98,9 +98,8 @@ LRESULT SignInDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp(msg.action, "login-response") == 0) {
                 if (strcmp(msg.content, "OK") == 0) {
                     CClientDlg dlg(this->username);
-                    ShowWindow(SW_HIDE);
-                    dlg.DoModal();
                     EndDialog(0);
+                    dlg.DoModal();
                 } else {
                     MessageBox(CString(msg.content));
                 }
