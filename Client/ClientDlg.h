@@ -1,26 +1,20 @@
-
-// ClientDlg.h : header file
-//
-
 #pragma once
-#pragma pack(1)
 #include <afxsock.h>
 #include "afxwin.h"
+#include "helper.h"
+#include <vector>
+#include <map>
+#include <utility>
+using namespace std;
 
-#define PORT 25000
-#define WM_SOCKET (WM_USER + 2)
-
-struct Message {
-    char action[30];
-    char content[70];
-};
+typedef vector<CString> MessageList;
 
 // CClientDlg dialog
 class CClientDlg : public CDialogEx
 {
 // Construction
 public:
-	CClientDlg(CWnd* pParent = NULL);	// standard constructor
+	CClientDlg(char username[20], CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
 	enum { IDD = IDD_CLIENT_DIALOG };
@@ -39,16 +33,22 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 
+    char username[20];
     SOCKET client;
     SOCKADDR_IN serverAddress;
 
-    void sendTo(SOCKET socket, Message msg);
-    void receive(SOCKET socket, Message &msg);
+    map<CString, MessageList> messageList;
+    CString currentRoom;
+    vector<pair<CString, int>> userList;
+
+    void fetchMessageList(MessageList list);
+    void fetchUserList();
 
 public:
     afx_msg void OnBnClickedOk();
-    afx_msg void OnBnClickedButton1();
-    afx_msg void OnBnClickedCancel();
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
     CListBox logs;
+    CListBox userListBox;
+    afx_msg void OnLbnSelchangeList2();
+    virtual void OnCancel();
 };
