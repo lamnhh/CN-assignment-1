@@ -3,6 +3,7 @@
 #include "ServerDlg.h"
 #include "afxdialogex.h"
 #include "helper.h"
+#include "utils/usersys.h"
 #include <cstdint>
 
 #pragma pack(1)
@@ -18,7 +19,7 @@ struct UserList {
 
 // CServerDlg dialog
 CServerDlg::CServerDlg(CWnd *pParent): CDialogEx(CServerDlg::IDD, pParent) {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);    
 }
 
 void CServerDlg::DoDataExchange(CDataExchange* pDX) {
@@ -43,6 +44,14 @@ BOOL CServerDlg::OnInitDialog() {
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+    
+    int err = sqlite3_open("server.db", &db);
+    if (err) {
+        MessageBox(L"Cannot connect to database");
+        EndDialog(0);
+        return TRUE;
+    }
+    logs.AddString(L"Connected to database");
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -139,63 +148,18 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp(msg.action, "login") == 0 || strcmp(msg.action, "register") == 0) {
                 Auth auth;
                 memcpy(&auth, (char*) &msg.content, sizeof auth);
-
-                if (strcmp(msg.action, "login") == 0) {
-                    bool doesUserExist = false;
-                    bool doesPassMatch = false;
-                    bool loggedIn = false;
-                    for (int i = 0; i < (int)authList.size(); ++i) {
-                        if (authList[i].username == unicode(auth.username)) {
-                            doesUserExist = true;
-                            doesPassMatch = authList[i].password == unicode(auth.password);
-                            loggedIn = authList[i].loggedIn;
-                            break;
-                        }
+                try {
+                    if (strcmp(msg.action, "login") == 0) {
+                        signin(db, auth);
+                    } else {
+                        signup(db, auth);
                     }
-                    if (!doesUserExist) {
-                        Message res;
-                        strcpy(res.action, "login-response");
-                        strcpy(res.content, "No such user");
-                        sendTo(wParam, res);
-                        return 0;
-                    }
-                    if (!doesPassMatch) {
-                        Message res;
-                        strcpy(res.action, "login-response");
-                        strcpy(res.content, "Wrong password");
-                        sendTo(wParam, res);
-                        return 0;
-                    }
-                    if (loggedIn) {
-                        Message res;
-                        strcpy(res.action, "login-response");
-                        strcpy(res.content, "User already logged in");
-                        sendTo(wParam, res);
-                        return 0;
-                    }
-                } else {
-                    bool found = false;
-                    for (int i = 0; i < (int)authList.size(); ++i) {
-                        if (authList[i].username == unicode(auth.username)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found) {
-                        Message res;
-                        strcpy(res.action, "login-response");
-                        strcpy(res.content, "Username already used");
-                        sendTo(wParam, res);
-                        return 0;
-                    }
-                    authList.push_back({ unicode(auth.username), unicode(auth.password), false });
-                }
-
-                for (int i = 0; i < (int)authList.size(); ++i) {
-                    if (authList[i].username == unicode(auth.username)) {
-                        authList[i].loggedIn = true;
-                        break;
-                    }
+                } catch (const char *err) {
+                    Message res;
+                    strcpy(res.action, "login-response");
+                    strcpy(res.content, err);
+                    sendTo(wParam, res);
+                    return 0;
                 }
 
                 char str[1000];
@@ -295,6 +259,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             for (int i = 0; i < (int)clientList.size(); ++i) {
                 if (clientList[i].socket == wParam) {
                     pos = i;
+                    logout(db, string(clientList[i].username));
                     strcpy(username, clientList[i].username);
                     break;
                 }
@@ -303,13 +268,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 return 0;
             }
             clientList.erase(clientList.begin() + pos);
-
-            for (int i = 0; i < (int)authList.size(); ++i) {
-                if (authList[i].username == unicode(username)) {
-                    authList[i].loggedIn = false;
-                    break;
-                }
-            }
 
             Message msg;
             char str[1000];
@@ -326,4 +284,9 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
         }
     }
     return 0;
+}
+
+void CServerDlg::OnCancel() {
+    sqlite3_close(db);
+    CDialogEx::OnCancel();
 }
