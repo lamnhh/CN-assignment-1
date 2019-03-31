@@ -4,6 +4,7 @@
 #include "afxdialogex.h"
 #include "helper.h"
 #include "utils/usersys.h"
+#include "utils/chat.h"
 #include <cstdint>
 
 #pragma pack(1)
@@ -187,6 +188,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 char str[1000];
                 sprintf(str, "%s joined the chat.", client.username);
 
+                generalChat(db, str);
                 strcpy(announcement.action, "message-all");
                 strcpy(announcement.content, str);
                 sendToAll(announcement);
@@ -208,6 +210,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 char str[1000];
                 sprintf(str, "%s: %s", sender, msg.content);
                 logs.AddString(unicode(str));
+                generalChat(db, str);
                 strcpy(msg.action, "message-all");
                 strcpy(msg.content, str);
                 sendToAll(msg);
@@ -241,6 +244,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 strcpy(pvt2.message, pvt1.message);
 
                 Message msg;
+                privateChat(db, pvt1.message, pvt1.receiver, pvt2.receiver);
                 strcpy(msg.action, "message-one");
                 memcpy(msg.content, &pvt1, sizeof pvt1);
                 sendTo(sender, msg);
@@ -273,6 +277,8 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             char str[1000];
             sprintf(str, "%s left the chat.", username);
             logs.AddString(unicode(str));
+            
+            generalChat(db, str);
             strcpy(msg.action, "message-all");
             strcpy(msg.content, str);
             sendToAll(msg);
