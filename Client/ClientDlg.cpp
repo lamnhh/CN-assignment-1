@@ -159,6 +159,7 @@ void CClientDlg::fetchMessageList(MessageList list) {
     for (int i = 0; i < (int)list.size(); ++i) {
         logs.AddString(list[i]);
     }
+    logs.SetCurSel((int)list.size() - 1);
 }
 
 void CClientDlg::fetchUserList() {
