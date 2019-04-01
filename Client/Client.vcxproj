@@ -103,7 +103,8 @@
   <ItemGroup>
     <ClInclude Include="Client.h" />
     <ClInclude Include="ClientDlg.h" />
-    <ClInclude Include="helper.h" />
+    <ClInclude Include="socket\ClientHandler.h" />
+    <ClInclude Include="socket\helper.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SignInDlg.h" />
     <ClInclude Include="stdafx.h" />
@@ -112,7 +113,12 @@
   <ItemGroup>
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="ClientDlg.cpp" />
-    <ClCompile Include="helper.cpp" />
+    <ClCompile Include="socket\ClientHandler.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="socket\helper.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="SignInDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

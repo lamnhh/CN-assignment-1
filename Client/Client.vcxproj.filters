@@ -36,7 +36,10 @@
     <ClInclude Include="SignInDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="helper.h">
+    <ClInclude Include="socket\helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="socket\ClientHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,7 +56,10 @@
     <ClCompile Include="SignInDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="helper.cpp">
+    <ClCompile Include="socket\helper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="socket\ClientHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
