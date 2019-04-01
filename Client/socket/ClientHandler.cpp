@@ -13,15 +13,22 @@ void ClientHandler::fetchMessList() {
 }
 
 void ClientHandler::fetchUserList() {
+    int pos = -1;
     userBox->ResetContent();
     for (int i = 0; i < (int)userList.size(); ++i) {
         char str[1000];
+        if (userList[i].first == currentRoom) {
+            pos = i;
+        }
         if (userList[i].second > 0) {
             sprintf(str, "%s (%d)", convertToChar(userList[i].first), userList[i].second);
         } else {
             sprintf(str, "%s", convertToChar(userList[i].first));
         }
         userBox->AddString(CString(str));
+    }
+    if (pos >= 0) {
+        userBox->SetCurSel(pos);
     }
 }
 
@@ -139,4 +146,10 @@ void ClientHandler::ChangeRoom(CString room) {
     currentRoom = room;
     fetchMessList();
     fetchUserList();
+    for (int i = 0; i < (int)userList.size(); ++i) {
+        if (userList[i].first == room) {
+            userBox->SetCurSel(i);
+            break;
+        }
+    }
 }

@@ -188,5 +188,6 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
     for (int i = 1; i < (int)messList.size(); ++i) {
         strcpy(pvt.message, messList[i][0].c_str());
         sendTo(receiver, Message("message-one", (char*) &pvt, sizeof pvt));
+        Sleep(25);
     }
 }
