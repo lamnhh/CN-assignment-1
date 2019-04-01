@@ -1,6 +1,6 @@
 #pragma once
 #include <afxsock.h>
-#include "helper.h"
+#include "socket/helper.h"
 
 // SignInDlg dialog
 

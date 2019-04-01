@@ -21,13 +21,11 @@ class ServerHandler {
 private:
     SOCKET server;
     SOCKADDR_IN serverAddress;
+    sqlite3 *db;
     vector<Client> clientList;
     vector<AuthInfo> authList;
 
-    void fetchAllUsername(char*);
     void sendToAll(Message);
-
-    sqlite3 *db;
     string findUsername(SOCKET);
 
 public:

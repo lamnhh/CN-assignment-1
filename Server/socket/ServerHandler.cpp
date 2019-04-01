@@ -2,19 +2,6 @@
 #include "../utils/usersys.h"
 #include "../utils/chat.h"
 
-void ServerHandler::fetchAllUsername(char *ans) {
-    struct UserList {
-        int count;
-        char list[30][20];
-    };
-    UserList list;
-    list.count = clientList.size();
-    for (int i = 0; i < list.count; ++i) {
-        strcpy(list.list[i], clientList[i].username);
-    }
-    memcpy(ans, (char*) &list, sizeof(UserList));
-}
-
 void ServerHandler::sendToAll(Message msg) {
     for (int i = 0; i < (int)clientList.size(); ++i) {
         Client client = clientList[i];
@@ -103,8 +90,9 @@ void ServerHandler::UpdateSocket(SOCKET sender, const char *username) {
     generalChat(db, str);
     sendToAll(Message("message-all", str));
 
-    fetchAllUsername(str);
-    sendTo(sender, Message("user-list", str, sizeof str));
+    for (int i = 0; i < (int)clientList.size(); ++i) {
+        sendTo(sender, Message("new-user", clientList[i].username));
+    }
 }
 
 void ServerHandler::MessageToGeneral(SOCKET sender, Message msg) {
