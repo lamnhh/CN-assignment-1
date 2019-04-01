@@ -27,16 +27,20 @@ private:
 
     void sendToAll(Message);
     string findUsername(SOCKET);
+    SOCKET findSocket(string);
 
 public:
     bool ConnectToDatabase();
     void DisconnectFromDatabase();
     bool StartListening(HWND);
+    string Logout(SOCKET);
+
     string HandleAuthentication(SOCKET, Message);
     void UpdateSocket(SOCKET, const char*);
 
     void MessageToGeneral(SOCKET, Message);
     void MessageToOne(SOCKET, Message);
-    string Logout(SOCKET);
+    void FetchHistoryAll(SOCKET);
+    void FetchHistoryOne(SOCKET, const char*);
 };
 

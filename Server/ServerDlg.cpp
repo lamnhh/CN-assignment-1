@@ -7,8 +7,6 @@
 #include "utils/chat.h"
 #include <cstdint>
 
-#pragma pack(1)
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -107,19 +105,18 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                     string response = handler.HandleAuthentication(wParam, msg);
                     logs.AddString(unicode(response.c_str()));
                 } catch (int) {}
-                return 0;
             }
             if (strcmp(msg.action, "re-login") == 0) {
                 handler.UpdateSocket(wParam, msg.content);
-                return 0;
             }
             if (strcmp("message-all", msg.action) == 0) {
                 handler.MessageToGeneral(wParam, msg);
-                return 0;
             }
             if (strcmp("message-one", msg.action) == 0) {
                 handler.MessageToOne(wParam, msg);
-                return 0;
+            }
+            if (strcmp("request-one", msg.action) == 0) {
+                handler.FetchHistoryOne(wParam, msg.content);
             }
             break;
         }

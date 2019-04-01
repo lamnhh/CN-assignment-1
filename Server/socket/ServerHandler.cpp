@@ -2,6 +2,11 @@
 #include "../utils/usersys.h"
 #include "../utils/chat.h"
 
+struct PrivateMessage {
+    char receiver[20];
+    char message[980];
+};
+
 void ServerHandler::sendToAll(Message msg) {
     for (int i = 0; i < (int)clientList.size(); ++i) {
         Client client = clientList[i];
@@ -18,6 +23,15 @@ string ServerHandler::findUsername(SOCKET sender) {
         }
     }
     return string(result);
+}
+
+SOCKET ServerHandler::findSocket(string username) {
+    for (int i = 0; i < (int)clientList.size(); ++i) {
+        if (string(clientList[i].username) == username) {
+            return clientList[i].socket;
+        }
+    }
+    return 0;
 }
 
 
@@ -82,17 +96,16 @@ void ServerHandler::UpdateSocket(SOCKET sender, const char *username) {
     strcpy(client.username, username);
 
     sendToAll(Message("new-user", client.username));
-    clientList.push_back(client);
 
     char str[1000];
     sprintf(str, "%s joined the chat.", client.username);
-
-    generalChat(db, str);
     sendToAll(Message("message-all", str));
-
+    
+    clientList.push_back(client);
     for (int i = 0; i < (int)clientList.size(); ++i) {
         sendTo(sender, Message("new-user", clientList[i].username));
     }
+    FetchHistoryAll(sender);
 }
 
 void ServerHandler::MessageToGeneral(SOCKET sender, Message msg) {
@@ -103,10 +116,6 @@ void ServerHandler::MessageToGeneral(SOCKET sender, Message msg) {
 }
 
 void ServerHandler::MessageToOne(SOCKET sender, Message msg) {
-    struct PrivateMessage {
-        char receiver[20];
-        char message[980];
-    };
     PrivateMessage pvt1, pvt2;
     memcpy(&pvt1, msg.content, sizeof pvt1);
 
@@ -154,9 +163,30 @@ string ServerHandler::Logout(SOCKET sender) {
     char str[1000];
     sprintf(str, "%s left the chat.", username);
 
-    generalChat(db, str);
     sendToAll(Message("message-all", str));
     sendToAll(Message("user-logout", username));
 
     return string(str);
+}
+
+void ServerHandler::FetchHistoryAll(SOCKET receiver) {
+    Table messList = fetchHistory(db, NULL, NULL);
+    for (int i = 1; i < (int)messList.size(); ++i) {
+        sendTo(receiver, Message("message-all", messList[i][0].c_str()));
+        Sleep(25);
+    }
+}
+
+void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername) {
+    string user1 = findUsername(sender);
+    string user2 = string(receiverUsername);
+    SOCKET receiver = findSocket(user2);
+
+    Table messList = fetchHistory(db, user1.c_str(), user2.c_str());
+    PrivateMessage pvt;
+    strcpy(pvt.receiver, user1.c_str());
+    for (int i = 1; i < (int)messList.size(); ++i) {
+        strcpy(pvt.message, messList[i][0].c_str());
+        sendTo(receiver, Message("message-one", (char*) &pvt, sizeof pvt));
+    }
 }

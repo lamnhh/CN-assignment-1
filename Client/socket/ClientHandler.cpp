@@ -73,6 +73,7 @@ void ClientHandler::InsertUser(CString username) {
     userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
 
     fetchUserList();
+    sendTo(client, Message("request-one", convertToChar(username)));
 }
 
 void ClientHandler::RemoveUser(CString username) {
@@ -86,6 +87,7 @@ void ClientHandler::RemoveUser(CString username) {
     if (pos != -1) {
         userList.erase(userList.begin() + pos);
     }
+    messageList.erase(username);
     fetchUserList();
 }
 
