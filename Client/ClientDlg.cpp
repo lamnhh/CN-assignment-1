@@ -107,6 +107,14 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 memcpy(&pvt, msg.content, sizeof msg.content);
                 handler.ReceiveOne(pvt);
             }
+            if (strcmp(msg.action, "message-all-new") == 0) {
+                handler.ReceiveAll(unicode(msg.content), true);
+            }
+            if (strcmp(msg.action, "message-one-new") == 0) {
+                PrivateMessage pvt;
+                memcpy(&pvt, msg.content, sizeof msg.content);
+                handler.ReceiveOne(pvt, true);
+            }
             if (strcmp(msg.action, "new-user") == 0) {
                 handler.InsertUser(CString(msg.content));
             }

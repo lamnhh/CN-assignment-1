@@ -38,8 +38,8 @@ public:
     void RemoveUser(CString);
 
     void Send(CString);
-    void ReceiveAll(CString);
-    void ReceiveOne(PrivateMessage);
+    void ReceiveAll(CString, bool unread = false);
+    void ReceiveOne(PrivateMessage, bool unread = false);
     void ChangeRoom(CString);
 
 };

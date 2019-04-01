@@ -118,6 +118,9 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp("request-one", msg.action) == 0) {
                 handler.FetchHistoryOne(wParam, msg.content);
             }
+            if (strcmp("update-latest", msg.action) == 0) {
+                handler.UpdateLatest(wParam, msg.content);
+            }
             break;
         }
         case FD_CLOSE: {

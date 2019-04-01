@@ -131,11 +131,32 @@ void ServerHandler::UpdateSocket(SOCKET sender, const char *username) {
     FetchHistoryAll(sender);
 }
 
+void ServerHandler::UpdateLatest(SOCKET sender, const char *username) {
+    string user = findUsername(sender);
+    string user1 = user;
+    string user2 = string(username);
+    if (user1 > user2) {
+        swap(user1, user2);
+    }
+    char str[1000];
+    sprintf(str, "select max(id) from history where (username1 = '%s' and username2 = '%s') or (username1 = '%s' and username2 = '%s')", user1.c_str(), user2.c_str(), user2.c_str(), user1.c_str());
+    Table table = handleSelect(db, str);
+    int id = table.size() == 2 ? stringToInt(table[1][0]) : 0;
+    sprintf(str, "select latest from latest where user1 = '%s' and user2 = '%s' and user = '%s'", user1.c_str(), user2.c_str(), user.c_str());
+    table = handleSelect(db, str);
+    if (table.size() == 1) {
+        sprintf(str, "insert into latest values ('%s', '%s', '%s', %d)", user1.c_str(), user2.c_str(), user.c_str(), id);
+    } else {
+        sprintf(str, "update latest set latest = %d where user1 = '%s' and user2 = '%s' and user = '%s'", id, user1.c_str(), user2.c_str(), user.c_str());
+    }
+    handleUpdate(db, str);
+}
+
 void ServerHandler::MessageToGeneral(SOCKET sender, Message msg) {
     char str[1000];
     sprintf(str, "%s: %s", findUsername(sender).c_str(), msg.content);
     generalChat(db, str);
-    sendToAll(Message("message-all", str));
+    sendToAll(Message("message-all-new", str));
 }
 
 void ServerHandler::MessageToOne(SOCKET sender, Message msg) {
@@ -161,9 +182,9 @@ void ServerHandler::MessageToOne(SOCKET sender, Message msg) {
     strcpy(pvt2.message, str);
 
     privateChat(db, pvt1.message, pvt1.receiver, pvt2.receiver);
-    sendTo(sender, Message("message-one", (char*) &pvt1, sizeof pvt1));
+    sendTo(sender, Message("message-one-new", (char*) &pvt1, sizeof pvt1));
     if (sender != receiver) {
-        sendTo(receiver, Message("message-one", (char*) &pvt2, sizeof pvt2));
+        sendTo(receiver, Message("message-one-new", (char*) &pvt2, sizeof pvt2));
     }
 }
 
@@ -187,9 +208,14 @@ string ServerHandler::Logout(SOCKET sender) {
 }
 
 void ServerHandler::FetchHistoryAll(SOCKET receiver) {
-    Table messList = fetchHistory(db, NULL, NULL);
+    Table messList = fetchHistory(db, NULL, NULL, findUsername(receiver).c_str());
     for (int i = 1; i < (int)messList.size(); ++i) {
         sendTo(receiver, Message("message-all", messList[i][0].c_str()));
+        Sleep(25);
+    }
+    messList = fetchHistory(db, NULL, NULL, findUsername(receiver).c_str(), true);
+    for (int i = 1; i < (int)messList.size(); ++i) {
+        sendTo(receiver, Message("message-all-new", messList[i][0].c_str()));
         Sleep(25);
     }
 }
@@ -199,12 +225,18 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
     string user2 = string(receiverUsername);
     SOCKET receiver = findSocket(user2);
 
-    Table messList = fetchHistory(db, user1.c_str(), user2.c_str());
+    Table messList = fetchHistory(db, user1.c_str(), user2.c_str(), user1.c_str());
     PrivateMessage pvt;
     strcpy(pvt.receiver, user2.c_str());
     for (int i = 1; i < (int)messList.size(); ++i) {
         strcpy(pvt.message, messList[i][0].c_str());
         sendTo(sender, Message("message-one", (char*) &pvt, sizeof pvt));
+        Sleep(25);
+    }
+    messList = fetchHistory(db, user1.c_str(), user2.c_str(), user1.c_str(), true);
+    for (int i = 1; i < (int)messList.size(); ++i) {
+        strcpy(pvt.message, messList[i][0].c_str());
+        sendTo(sender, Message("message-one-new", (char*) &pvt, sizeof pvt));
         Sleep(25);
     }
 }

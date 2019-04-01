@@ -1,4 +1,6 @@
 #include "helper.h"
+#include <sstream>
+using namespace std;
 
 Message::Message() {}
 
@@ -27,4 +29,15 @@ char* convertToChar(const CString &s) {
 
 CString unicode(const char *str) {
     return (LPCTSTR)CA2W(str, CP_UTF8);
+}
+
+int stringToInt(string str) {
+    if (str == "") {
+        return 0;
+    }
+    stringstream is;
+    is << str;
+    int n;
+    is >> n;
+    return n;
 }

@@ -2,6 +2,8 @@
 #pragma pack(1)
 
 #include <afxsock.h>
+#include <string>
+using namespace std;
 
 #define PORT 25000
 #define WM_SOCKET (WM_USER + 1)
@@ -23,3 +25,4 @@ void sendTo(SOCKET socket, Message &msg);
 void receive(SOCKET socket, Message &msg);
 char* convertToChar(const CString &s);
 CString unicode(const char *str);
+int stringToInt(string);

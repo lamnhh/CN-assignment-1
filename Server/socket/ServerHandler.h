@@ -39,6 +39,7 @@ public:
 
     string HandleAuthentication(SOCKET, Message);
     void UpdateSocket(SOCKET, const char*);
+    void UpdateLatest(SOCKET, const char*);
 
     void MessageToGeneral(SOCKET, Message);
     void MessageToOne(SOCKET, Message);

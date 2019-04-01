@@ -124,29 +124,30 @@ void ClientHandler::Send(CString message) {
     }
 }
 
-void ClientHandler::ReceiveAll(CString message) {
+void ClientHandler::ReceiveAll(CString message, bool unread) {
     messageList[CString("General")].push_back(message);
     if (currentRoom != CString("General")) {
-        userList[0].second += 1;
+        userList[0].second += unread ? 1 : 0;
         fetchUserList();
     } else {
         fetchMessList();
     }
 }
 
-void ClientHandler::ReceiveOne(PrivateMessage pvt) {
+void ClientHandler::ReceiveOne(PrivateMessage pvt, bool unread) {
     CString sender(pvt.receiver);
     messageList[sender].push_back(unicode(pvt.message));
     if (currentRoom != sender) {
         for (int i = 0; i < (int)userList.size(); ++i) {
             if (userList[i].first == sender) {
-                userList[i].second += 1;
+                userList[i].second += unread ? 1 : 0;
                 break;
             }
         }
         fetchUserList();
     } else {
         fetchMessList();
+        sendTo(client, Message("update-latest", convertToChar(currentRoom)));
     }
 }
 
@@ -166,5 +167,9 @@ void ClientHandler::ChangeRoom(CString room) {
             userBox->SetCurSel(i);
             break;
         }
+    }
+
+    if (room != CString("General")) {
+        sendTo(client, Message("update-latest", convertToChar(room)));
     }
 }
