@@ -2,17 +2,12 @@
 #include "Server.h"
 #include "ServerDlg.h"
 #include "afxdialogex.h"
-#include "helper.h"
+#include "socket/helper.h"
 #include "utils/usersys.h"
 #include "utils/chat.h"
 #include <cstdint>
 
 #pragma pack(1)
-
-struct UserList {
-    int count;
-    char list[30][20];
-};
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -45,9 +40,7 @@ BOOL CServerDlg::OnInitDialog() {
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
-    
-    int err = sqlite3_open("server.db", &db);
-    if (err) {
+    if (!handler.ConnectToDatabase()) {    
         MessageBox(L"Cannot connect to database");
         EndDialog(0);
         return TRUE;
@@ -88,48 +81,11 @@ HCURSOR CServerDlg::OnQueryDragIcon() {
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-
-/*******************************************************************
-********************************************************************
- * MY OWN CODE
-********************************************************************
-********************************************************************/
-
 void CServerDlg::OnBnClickedOk() {
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
-        return;
-    }
-    UpdateData();
-    server = socket(AF_INET, SOCK_STREAM, 0);
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(PORT);
-    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-    bind(server, (SOCKADDR *)&serverAddress, sizeof(serverAddress));
-    listen(server, 5);
-
-    int err = WSAAsyncSelect(server, m_hWnd, WM_SOCKET, FD_READ | FD_ACCEPT | FD_CLOSE);
-    if (err) {
-        return;
-    }
-
-    logs.AddString(CString("Connection created. Listening."));
-    clientList.clear();
-}
-
-void CServerDlg::fetchAllUsername(char *ans) {
-    UserList list;
-    list.count = clientList.size();
-    for (int i = 0; i < list.count; ++i) {
-        strcpy(list.list[i], clientList[i].username);
-    }
-    memcpy(ans, (char*) &list, sizeof(UserList));
-}
-
-void CServerDlg::sendToAll(Message msg) {
-    for (int i = 0; i < (int)clientList.size(); ++i) {
-        Client client = clientList[i];
-        sendTo(client.socket, msg);
+    if (handler.StartListening(m_hWnd)) {
+        logs.AddString(CString("Connection created. Listening."));
+    } else {
+        logs.AddString(CString("Failed to create connection."));
     }
 }
 
@@ -147,145 +103,31 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             Message msg;
             receive(wParam, msg);
             if (strcmp(msg.action, "login") == 0 || strcmp(msg.action, "register") == 0) {
-                Auth auth;
-                memcpy(&auth, (char*) &msg.content, sizeof auth);
                 try {
-                    if (strcmp(msg.action, "login") == 0) {
-                        signin(db, auth);
-                    } else {
-                        signup(db, auth);
-                    }
-                } catch (const char *err) {
-                    Message res;
-                    strcpy(res.action, "login-response");
-                    strcpy(res.content, err);
-                    sendTo(wParam, res);
-                    return 0;
-                }
-
-                char str[1000];
-                sprintf(str, "User %s %s.", auth.username, strcmp(msg.action, "login") == 0 ? "logged in" : "registered");
-                logs.AddString(unicode(str));
-
-                Message res;
-                strcpy(res.action, "login-response");
-                strcpy(res.content, "OK");
-                sendTo(wParam, res);
+                    string response = handler.HandleAuthentication(wParam, msg);
+                    logs.AddString(unicode(response.c_str()));
+                } catch (int) {}
                 return 0;
             }
             if (strcmp(msg.action, "re-login") == 0) {
-                Client client;
-                client.socket = wParam;
-                strcpy(client.username, msg.content);
-                
-                Message announcement;
-                strcpy(announcement.action, "new-user");
-                strcpy(announcement.content, client.username);
-                sendToAll(announcement);
-
-                clientList.push_back(client);
-
-                char str[1000];
-                sprintf(str, "%s joined the chat.", client.username);
-
-                generalChat(db, str);
-                strcpy(announcement.action, "message-all");
-                strcpy(announcement.content, str);
-                sendToAll(announcement);
-
-                fetchAllUsername(str);
-                strcpy(announcement.action, "user-list");
-                memcpy(announcement.content, str, sizeof str);
-                sendTo(wParam, announcement);
+                handler.UpdateSocket(wParam, msg.content);
                 return 0;
             }
-            char sender[20] = { 0 };
-            for (int i = 0; i < (int)clientList.size(); ++i) {
-                if (clientList[i].socket == wParam) {
-                    strcpy(sender, clientList[i].username);
-                    break;
-                }
-            }
             if (strcmp("message-all", msg.action) == 0) {
-                char str[1000];
-                sprintf(str, "%s: %s", sender, msg.content);
-                logs.AddString(unicode(str));
-                generalChat(db, str);
-                strcpy(msg.action, "message-all");
-                strcpy(msg.content, str);
-                sendToAll(msg);
+                handler.MessageToGeneral(wParam, msg);
+                return 0;
             }
             if (strcmp("message-one", msg.action) == 0) {
-                struct PrivateMessage {
-                    char receiver[20];
-                    char message[980];
-                } pvt1;
-                memcpy(&pvt1, msg.content, sizeof pvt1);
-
-                SOCKET sender = wParam;
-                SOCKET receiver;                
-                for (int i = 0; i < (int)clientList.size(); ++i) {
-                    if (strcmp(clientList[i].username, pvt1.receiver) == 0) {
-                        receiver = clientList[i].socket;
-                        break;
-                    }
-                }
-
-                PrivateMessage pvt2;
-                char str[980];
-                for (int i = 0; i < (int)clientList.size(); ++i) {
-                    if (clientList[i].socket == sender) {
-                        strcpy(pvt2.receiver, clientList[i].username);
-                        sprintf(str, "%s: %s", clientList[i].username, pvt1.message);
-                        strcpy(pvt1.message, str);
-                        break;
-                    }
-                }
-                strcpy(pvt2.message, pvt1.message);
-
-                Message msg;
-                privateChat(db, pvt1.message, pvt1.receiver, pvt2.receiver);
-                strcpy(msg.action, "message-one");
-                memcpy(msg.content, &pvt1, sizeof pvt1);
-                sendTo(sender, msg);
-                
-                if (sender != receiver) {
-                    strcpy(msg.action, "message-one");
-                    memcpy(&msg.content, &pvt2, sizeof pvt2);
-                    sendTo(receiver, msg);
-                }
+                handler.MessageToOne(wParam, msg);
+                return 0;
             }
             break;
         }
         case FD_CLOSE: {
-            int pos = -1;
-            char username[20];
-            for (int i = 0; i < (int)clientList.size(); ++i) {
-                if (clientList[i].socket == wParam) {
-                    pos = i;
-                    logout(db, string(clientList[i].username));
-                    strcpy(username, clientList[i].username);
-                    break;
-                }
-            }
-            if (pos == -1) {
-                return 0;
-            }
-            clientList.erase(clientList.begin() + pos);
-
-            Message msg;
-            char str[1000];
-            sprintf(str, "%s left the chat.", username);
-            logs.AddString(unicode(str));
-            
-            generalChat(db, str);
-            strcpy(msg.action, "message-all");
-            strcpy(msg.content, str);
-            sendToAll(msg);
-
-            strcpy(msg.action, "user-logout");
-            strcpy(msg.content, username);
-            sendToAll(msg);
+            try {
+                string response = handler.Logout(wParam);
+                logs.AddString(unicode(response.c_str()));
+            } catch (int) {}
             break;
         }
     }
@@ -293,6 +135,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 }
 
 void CServerDlg::OnCancel() {
-    sqlite3_close(db);
+    handler.DisconnectFromDatabase();
     CDialogEx::OnCancel();
 }

@@ -101,10 +101,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="helper.h" />
+    <ClInclude Include="socket\helper.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ServerDlg.h" />
+    <ClInclude Include="socket\ServerHandler.h" />
     <ClInclude Include="utils\chat.h" />
     <ClInclude Include="utils\dbcontroller.h" />
     <ClInclude Include="utils\sqlite3.h" />
@@ -113,9 +114,14 @@
     <ClInclude Include="utils\usersys.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="helper.cpp" />
+    <ClCompile Include="socket\helper.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="ServerDlg.cpp" />
+    <ClCompile Include="socket\ServerHandler.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="utils\chat.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>

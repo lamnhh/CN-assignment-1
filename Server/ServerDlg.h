@@ -4,20 +4,8 @@
 #include <afxsock.h>
 #include <vector>
 #include <string>
-#include "helper.h"
-#include "utils/sqlite3.h"
+#include "socket/ServerHandler.h"
 using namespace std;
-
-struct Client {
-    SOCKET socket;
-    char username[20];
-};
-
-struct AuthInfo {
-    CString username;
-    CString password;
-    bool loggedIn;
-};
 
 class CServerDlg : public CDialogEx {
 public:
@@ -35,16 +23,9 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
     LRESULT handleEvents(WPARAM wParam, LPARAM lParam);
-    
-    SOCKET server;
-    SOCKADDR_IN serverAddress;
-    vector<Client> clientList;
-    vector<AuthInfo> authList;
 
-    void fetchAllUsername(char*);
-    void sendToAll(Message msg);
-
-    sqlite3 *db;
+private:
+    ServerHandler handler;
 
 public:
     afx_msg void OnBnClickedOk();

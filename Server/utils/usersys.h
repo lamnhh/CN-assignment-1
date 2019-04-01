@@ -1,6 +1,6 @@
 #pragma once
 #include "sqlite3.h"
-#include "../helper.h"
+#include "../socket/helper.h"
 #include <string>
 using std::string;
 
