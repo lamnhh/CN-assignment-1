@@ -5,6 +5,7 @@ using namespace std;
 
 void ClientHandler::fetchMessList() {
     const int MAX_LENGTH = 72;
+    int count = 0;
     MessageList msgList = messageList[currentRoom];
     messBox->ResetContent();
     for (int i = 0; i < (int)msgList.size(); ++i) {
@@ -12,9 +13,10 @@ void ClientHandler::fetchMessList() {
         for (int i = 0; i < (int)str.size(); i += MAX_LENGTH) {
             string s = str.substr(i, MAX_LENGTH);
             messBox->AddString(unicode(s.c_str()));
+            count += 1;
         }
     }
-    messBox->SetCurSel((int)msgList.size() - 1);
+    messBox->SetCurSel(count - 1);
 }
 
 void ClientHandler::fetchUserList() {
@@ -74,22 +76,30 @@ void ClientHandler::Initialize(const char *username, CListBox *messBox, CListBox
 }
 
 void ClientHandler::InsertUser(CString username) {
-    int countGeneral = userList.size() > 0 ? userList[0].second : 0;
-    if (userList.size() >= 2) {
-        userList.erase(userList.begin(), userList.begin() + 2);
+    bool exists = false;
+    for (int i = 0; i < (int)userList.size(); ++i) {
+        if (userList[i].first == username) {
+            exists = true;
+            break;
+        }
     }
-    userList.push_back(make_pair(username, 0));
-    sort(userList.begin(), userList.end());
+    if (!exists) {
+        int countGeneral = userList.size() > 0 ? userList[0].second : 0;
+        if (userList.size() >= 2) {
+            userList.erase(userList.begin(), userList.begin() + 2);
+        }
+        userList.push_back(make_pair(username, 0));
+        sort(userList.begin(), userList.end());
 
-    userList.insert(userList.begin(), make_pair(CString("---------------"), -1));
-    userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
-
+        userList.insert(userList.begin(), make_pair(CString("---------------"), -1));
+        userList.insert(userList.begin(), make_pair(CString("General"), countGeneral));
+    }
     fetchUserList();
     sendTo(client, Message("request-one", convertToChar(username)));
 }
 
 void ClientHandler::RemoveUser(CString username) {
-    int pos = -1;
+    /*int pos = -1;
     for (int i = 0; i < (int)userList.size(); ++i) {
         if (userList[i].first == username) {
             pos = i;
@@ -100,7 +110,7 @@ void ClientHandler::RemoveUser(CString username) {
         userList.erase(userList.begin() + pos);
     }
     messageList.erase(username);
-    fetchUserList();
+    fetchUserList();*/
 }
 
 void ClientHandler::Send(CString message) {

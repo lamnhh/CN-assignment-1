@@ -2,6 +2,8 @@
 #include "../utils/usersys.h"
 #include "../utils/chat.h"
 
+Client::Client() : socket(0) {};
+
 struct PrivateMessage {
     char receiver[20];
     char message[980];
@@ -10,7 +12,9 @@ struct PrivateMessage {
 void ServerHandler::sendToAll(Message msg) {
     for (int i = 0; i < (int)clientList.size(); ++i) {
         Client client = clientList[i];
-        sendTo(client.socket, msg);
+        if (client.socket) {
+            sendTo(client.socket, msg);
+        }
     }
 }
 
@@ -42,6 +46,14 @@ bool ServerHandler::ConnectToDatabase() {
     if (err) {
         return false;
     }
+    string statement = "select username from user";
+    Table result = handleSelect(db, statement.c_str());
+    clientList.clear();
+    for (int i = 1; i < (int)result.size(); ++i) {
+        Client client;
+        strcpy(client.username, result[i][0].c_str());
+        clientList.push_back(client);
+    }
     return true;
 }
 
@@ -71,7 +83,6 @@ bool ServerHandler::StartListening(HWND m_hWnd) {
     if (err) {
         return false;
     }
-    clientList.clear();
     return true;
 }
 
@@ -92,22 +103,28 @@ string ServerHandler::HandleAuthentication(SOCKET sender, Message msg) {
     char str[1000];
     sprintf(str, "%s %s.", auth.username, strcmp(msg.action, "login") == 0 ? "logged in" : "registered");
 
+    if (strcmp(msg.action, "register") == 0) {       
+        Client client;
+        strcpy(client.username, auth.username);
+        clientList.push_back(client);
+        sendToAll(Message("new-user", auth.username));
+    }
     sendTo(sender, Message("login-response", "OK"));
     return string(str);
 }
 
 void ServerHandler::UpdateSocket(SOCKET sender, const char *username) {
-    Client client;
-    client.socket = sender;
-    strcpy(client.username, username);
-
-    sendToAll(Message("new-user", client.username));
-
+    for (int i = 0; i < (int)clientList.size(); ++i) {
+        if (strcmp(clientList[i].username, username) == 0) {
+            clientList[i].socket = sender;
+            break;
+        }
+    }
+    
     char str[1000];
-    sprintf(str, "%s joined the chat.", client.username);
+    sprintf(str, "%s joined the chat.", username);
     sendToAll(Message("message-all", str));
     
-    clientList.push_back(client);
     for (int i = 0; i < (int)clientList.size(); ++i) {
         sendTo(sender, Message("new-user", clientList[i].username));
     }
@@ -151,20 +168,14 @@ void ServerHandler::MessageToOne(SOCKET sender, Message msg) {
 }
 
 string ServerHandler::Logout(SOCKET sender) {
-    int pos = -1;
     char username[20];
     for (int i = 0; i < (int)clientList.size(); ++i) {
         if (clientList[i].socket == sender) {
-            pos = i;
             logout(db, string(clientList[i].username));
             strcpy(username, clientList[i].username);
             break;
         }
     }
-    if (pos == -1) {
-        throw 1;
-    }
-    clientList.erase(clientList.begin() + pos);
 
     char str[1000];
     sprintf(str, "%s left the chat.", username);
@@ -190,10 +201,10 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
 
     Table messList = fetchHistory(db, user1.c_str(), user2.c_str());
     PrivateMessage pvt;
-    strcpy(pvt.receiver, user1.c_str());
+    strcpy(pvt.receiver, user2.c_str());
     for (int i = 1; i < (int)messList.size(); ++i) {
         strcpy(pvt.message, messList[i][0].c_str());
-        sendTo(receiver, Message("message-one", (char*) &pvt, sizeof pvt));
+        sendTo(sender, Message("message-one", (char*) &pvt, sizeof pvt));
         Sleep(25);
     }
 }

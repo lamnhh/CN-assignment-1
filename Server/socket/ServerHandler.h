@@ -9,6 +9,7 @@ using namespace std;
 struct Client {
     SOCKET socket;
     char username[20];
+    Client();
 };
 
 struct AuthInfo {
