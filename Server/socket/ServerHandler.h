@@ -32,6 +32,7 @@ private:
 public:
     bool ConnectToDatabase();
     void DisconnectFromDatabase();
+    void DisconnectEveryone();
     bool StartListening(HWND);
     string Logout(SOCKET);
 

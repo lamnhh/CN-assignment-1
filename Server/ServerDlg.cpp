@@ -132,6 +132,7 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 }
 
 void CServerDlg::OnCancel() {
+    handler.DisconnectEveryone();
     handler.DisconnectFromDatabase();
     CDialogEx::OnCancel();
 }

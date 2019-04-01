@@ -4,10 +4,15 @@
 using namespace std;
 
 void ClientHandler::fetchMessList() {
+    const int MAX_LENGTH = 72;
     MessageList msgList = messageList[currentRoom];
     messBox->ResetContent();
     for (int i = 0; i < (int)msgList.size(); ++i) {
-        messBox->AddString(msgList[i]);
+        string str(convertToChar(msgList[i]));
+        for (int i = 0; i < (int)str.size(); i += MAX_LENGTH) {
+            string s = str.substr(i, MAX_LENGTH);
+            messBox->AddString(unicode(s.c_str()));
+        }
     }
     messBox->SetCurSel((int)msgList.size() - 1);
 }

@@ -113,6 +113,13 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp(msg.action, "user-logout") == 0) {
                 handler.RemoveUser(CString(msg.content));
             }
+            if (strcmp(msg.action, "force-logout") == 0) {
+                MessageBox(L"Connection lost.");
+                closesocket(wParam);
+                SignInDlg dlg;
+                EndDialog(0);
+                dlg.DoModal();
+            }
             break;
         }
     }

@@ -24,6 +24,9 @@ void signin(sqlite3 *db, Auth auth) {
 }
 
 void signup(sqlite3 *db, Auth auth) {
+    if (strlen(auth.password) <= 6) {
+        throw "Password must contain at least 6 characters";
+    }
     string query = "select * \
                    from user \
                    where username='" + string(auth.username) + "'";

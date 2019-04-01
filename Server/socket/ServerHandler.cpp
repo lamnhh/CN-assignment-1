@@ -49,6 +49,12 @@ void ServerHandler::DisconnectFromDatabase() {
     sqlite3_close(db);
 }
 
+void ServerHandler::DisconnectEveryone() {
+    string statement = "update user set loggedIn = 0";
+    handleUpdate(db, statement.c_str());
+    sendToAll(Message("force-logout", ""));
+}
+
 bool ServerHandler::StartListening(HWND m_hWnd) {
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData)) {
