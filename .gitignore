@@ -1,6 +1,9 @@
 CN-assignment-1.sdf
 CN-assignment-1.opensdf
 Debug/*
+Release/*
 ipch/*
 Server/Debug/*
+Server/Release/*
 Client/Debug/*
+Client/Release/*
