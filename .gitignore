@@ -7,3 +7,4 @@ Server/Debug/*
 Server/Release/*
 Client/Debug/*
 Client/Release/*
+.vscode/*
