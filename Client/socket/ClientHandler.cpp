@@ -5,11 +5,11 @@
 #include "helper.h"
 using namespace std;
 
-const int PART_SIZE = 962;
+const int PART_SIZE = 942;
 struct FilePart {
 	int id;
 	int size;
-	char filename[30];
+	char filename[50];
 	char content[PART_SIZE];
 };
 
@@ -206,15 +206,17 @@ void ClientHandler::SendFile(const char *path) {
 		if (cnt <= 0) {
 			break;
 		}
+		id += 1;
 		FilePart part;
-		part.id = ++id;
+		part.id = id;
 		part.size = cnt;
 		strcpy(part.filename, filename.c_str());
 		memcpy(part.content, buf, cnt);
 
 		sendTo(client, Message("file", (char*)&part, sizeof FilePart));
-		first = false;
+		Sleep(10);
 	}
+
 	fclose(f);
 }
 
@@ -228,15 +230,16 @@ void ClientHandler::SaveFile(const char *raw) {
 
 	char str[100];
 	if (part.id == -1) {
+		Sleep(1000);
 		char str[1000];
-		sprintf(str, "type tmp.%s\\%s.* > %s && rmdir tmp.%s /s /q", part.filename, part.filename, part.filename, part.filename);
+		sprintf(str, "copy /b \"tmp.%s\\%s.*\" \"%s\" && rmdir \"tmp.%s\" /s /q", part.filename, part.filename, part.filename, part.filename);
 		system(str);
 		string s = string(part.filename) + string(" has been received");
 		this->messBox->AddString(unicode(s.c_str()));
 		return;
 	}
 	if (part.id == 1) {
-		string cmd = "mkdir tmp." + string(part.filename);
+		string cmd = "mkdir \"tmp." + string(part.filename) + "\"";
 		system(cmd.c_str());
 	}
 	sprintf(str, "tmp.%s/%s.%010d", part.filename, part.filename, part.id);

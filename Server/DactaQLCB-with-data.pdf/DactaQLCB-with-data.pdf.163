@@ -1,0 +1,9 @@
+:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description rdf:about=""  xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
+<pdf:Producer>Microsoft® PowerPoint® for Office 365</pdf:Producer></rdf:Description>
+<rdf:Description rdf:about=""  xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dc:title><rdf:Alt><rdf:li xml:lang="x-default">Homework CTT102 – Nhập môn Cơ sở dữ liệu</rdf:li></rdf:Alt></dc:title><dc:creator><rdf:Seq><rdf:li>Luong Vi, Minh</rdf:li></rdf:Seq></dc:creator></rdf:Description>
+<rdf:Description rdf:about=""  xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+<xmp:CreatorTool>Microsoft® PowerPoint® for Office 365</xmp:CreatorTool><xmp:CreateDate>2019-04-10T13:49:09+07:00</xmp:CreateDate><xmp:ModifyDate>2019-04-10T13:49:09+07:00</xmp:ModifyDate></rdf:Description>
+<rdf:Description rdf:about=""  xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/">
+<xmpMM:DocumentID>uuid:8BF8D9CE-D7D6-4246-A8E5-95C55A0AF893</xmpMM:Doc

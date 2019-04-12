@@ -5,11 +5,11 @@
 
 Client::Client() : socket(0) {};
 
-const int PART_SIZE = 962;
+const int PART_SIZE = 942;
 struct FilePart {
 	int id;
 	int size;
-	char filename[30];
+	char filename[50];
 	char content[PART_SIZE];
 };
 struct PrivateMessage {
@@ -252,13 +252,14 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
 void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 	FilePart part;
 	memcpy((char*)&part, raw, sizeof FilePart);
+	
 
-	char str[100];
+	char str[1000];
 	if (part.id == 1) {
-		system(("mkdir " + string(part.filename)).c_str());
+		system(("mkdir \"" + string(part.filename) + "-folder\"").c_str());
 		sendToAll(Message("new-file", part.filename));
 	}
-	sprintf(str, "%s/%s.%d", part.filename, part.filename, part.id);
+	sprintf(str, "%s-folder/%s.%d", part.filename, part.filename, part.id);
 
 	FILE *f = _wfopen(unicode(str), unicode("wb"));
 	fwrite(part.content, 1, part.size, f);
@@ -268,8 +269,8 @@ void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 void ServerHandler::SendFile(SOCKET socket, const char *filename) {
 	FilePart part;
 	for (int i = 1;; ++i) {
-		char str[100];
-		sprintf(str, "%s/%s.%d", filename, filename, i);
+		char str[1000];
+		sprintf(str, "%s-folder/%s.%d", filename, filename, i);
 		FILE *f = _wfopen(unicode(str), unicode("rb"));
 		if (f == NULL) {
 			break;
@@ -280,7 +281,10 @@ void ServerHandler::SendFile(SOCKET socket, const char *filename) {
 		fclose(f);
 
 		sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
+		
+		Sleep(10);
 	}
 	part.id = -1;
 	sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
+	Sleep(10);
 }
