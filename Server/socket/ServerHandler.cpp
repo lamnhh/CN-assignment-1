@@ -137,6 +137,7 @@ void ServerHandler::UpdateSocket(SOCKET sender, const char *username) {
         sendTo(sender, Message("new-user", clientList[i].username));
     }
     FetchHistoryAll(sender);
+	FetchFileAll(sender);
 }
 
 void ServerHandler::UpdateLatest(SOCKET sender, const char *username) {
@@ -227,7 +228,12 @@ void ServerHandler::FetchHistoryAll(SOCKET receiver) {
         Sleep(25);
     }
 }
-
+void ServerHandler::FetchFileAll(SOCKET receiver){
+	Table fileList = fetchFile(db);
+	for (int i = 1; i < (int)fileList.size(); ++i){
+		sendTo(receiver,Message("new-file", fileList[i][0].c_str()));
+	}
+}
 void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername) {
     string user1 = findUsername(sender);
     string user2 = string(receiverUsername);
@@ -257,6 +263,7 @@ void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 	if (part.id == 1) {
 		system(("mkdir \"" + string(part.filename) + "-folder\"").c_str());
 		sendToAll(Message("new-file", part.filename));
+		handleUpdate(db, ("insert into file values ('" + string(part.filename) + "')").c_str());
 	}
 	sprintf(str, "%s-folder/%s.%d", part.filename, part.filename, part.id);
 
@@ -280,6 +287,7 @@ void ServerHandler::SendFile(SOCKET socket, const char *filename) {
 			sendTo(socket, Message("file-length", (char*)&fl, sizeof FileLength));
 			break;
 		}
+		fclose(f);
 	}
 	Sleep(100);
 
