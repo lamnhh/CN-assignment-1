@@ -35,4 +35,7 @@ public:
     afx_msg void OnBnClickedButton1();
     virtual void OnCancel();
 
+	afx_msg void OnBnClickedButton2();
+	CListBox fileList;
+	afx_msg void OnLbnSelchangeList();
 };

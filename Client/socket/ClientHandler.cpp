@@ -1,7 +1,29 @@
+#include <iostream>
+#include <string>
 #include <algorithm>
+#include <sstream>
 #include "ClientHandler.h"
 #include "helper.h"
 using namespace std;
+
+const int PART_SIZE = 942;
+struct FilePart {
+	int id;
+	int size;
+	char filename[50];
+	char content[PART_SIZE];
+};
+
+string getFileName(string path) {
+	string ans = "";
+	for (int i = (int)path.size() - 1; i >= 0; --i) {
+		if (path[i] == '/' || path[i] == '\\') {
+			break;
+		}
+		ans = path[i] + ans;
+	}
+	return ans;
+}
 
 void ClientHandler::fetchMessList() {
     const int MAX_LENGTH = 72;
@@ -172,4 +194,88 @@ void ClientHandler::ChangeRoom(CString room) {
     if (room != CString("General")) {
         sendTo(client, Message("update-latest", convertToChar(room)));
     }
+}
+
+void ClientHandler::SendFile(const char *path) {
+	FILE *f = _wfopen(unicode(path), unicode("rb"));
+	fseek(f, 0, SEEK_END);
+	int fileSize = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	string filename(getFileName(string(path)));
+	int partCount = (fileSize + PART_SIZE - 1) / PART_SIZE;
+	char buf[1000];
+	for (int id = 1; id <= partCount; ++id) {
+		int cnt = fread(buf, 1, PART_SIZE, f);
+
+		FilePart part;
+		part.id = id;
+		part.size = cnt;
+		strcpy(part.filename, filename.c_str());
+		memcpy(part.content, buf, cnt);
+
+		sendTo(client, Message("file", (char*)&part, sizeof FilePart));
+		if (id == 1) {
+			stringstream is;
+			is << "Uploading " << filename << " (0%)";
+			this->messBox->AddString(unicode(is.str().c_str()));
+		} else {
+			int p = (id * 100 + partCount - 1) / partCount;
+			stringstream is;
+			is << "Uploading " << filename << " (" << p << "%)";
+			this->messBox->DeleteString(this->messBox->GetCount() - 1);
+			this->messBox->AddString(unicode(is.str().c_str()));
+		}
+		this->messBox->SetCurSel(this->messBox->GetCount() - 1);
+
+		Sleep(10);
+	}
+	FilePart part;
+	part.id = -1;
+	strcpy(part.filename, filename.c_str());
+	sendTo(client, Message("file", (char*)&part, sizeof FilePart));
+	fclose(f);
+}
+
+void ClientHandler::RequestFile(const char *filename) {
+	sendTo(client, Message("request-file", filename));
+}
+
+void ClientHandler::SaveFile(const char *raw) {
+	FilePart part;
+	memcpy((char*)&part, raw, sizeof FilePart);
+
+	char str[1000];
+	if (part.id == -1) {
+		Sleep(1000);
+		sprintf(str, "copy /b \"tmp.%s\\%s.*\" \"%s\" && rmdir \"tmp.%s\" /s /q", part.filename, part.filename, part.filename, part.filename);
+		system(str);
+		return;
+	}
+	if (part.id == 1) {
+		string cmd = "mkdir \"tmp." + string(part.filename) + "\"";
+		system(cmd.c_str());
+
+		stringstream is;
+		is << "Downloading " << part.filename << " (0%)";
+		this->messBox->AddString(unicode(is.str().c_str()));
+	} else {
+		int partCount = fileLength[unicode(part.filename)];
+		int percentage = (part.id * 100 + partCount - 1) / partCount;
+		stringstream is;
+		is << "Downloading " << part.filename << " (" << percentage << "%)";
+		this->messBox->DeleteString(this->messBox->GetCount() - 1);
+		this->messBox->AddString(unicode(is.str().c_str()));
+	}
+	this->messBox->SetCurSel(this->messBox->GetCount() - 1);
+	sprintf(str, "tmp.%s/%s.%010d", part.filename, part.filename, part.id);
+
+	FILE *f = _wfopen(unicode(str), unicode("wb"));
+	fwrite(part.content, 1, part.size, f);
+	fclose(f);
+}
+
+void ClientHandler::ReceiveFileLength(const char *filename, int length) {
+	CString name = unicode(filename);
+	fileLength[name] = length;
 }
