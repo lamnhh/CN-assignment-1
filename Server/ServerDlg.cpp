@@ -121,6 +121,12 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp("update-latest", msg.action) == 0) {
                 handler.UpdateLatest(wParam, msg.content);
             }
+			if (strcmp("file", msg.action) == 0) {
+				handler.SaveFile(wParam, msg.content);
+			}
+			if (strcmp("request-file", msg.action) == 0) {
+				handler.SendFile(wParam, msg.content);
+			}
             break;
         }
         case FD_CLOSE: {

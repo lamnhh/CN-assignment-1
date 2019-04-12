@@ -45,5 +45,8 @@ public:
     void MessageToOne(SOCKET, Message);
     void FetchHistoryAll(SOCKET);
     void FetchHistoryOne(SOCKET, const char*);
+
+	void SaveFile(SOCKET, const char*);
+	void SendFile(SOCKET, const char*);
 };
 

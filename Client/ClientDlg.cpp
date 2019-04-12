@@ -23,9 +23,10 @@ CClientDlg::CClientDlg(char username[20], CWnd *pParent): CDialogEx(CClientDlg::
 }
 
 void CClientDlg::DoDataExchange(CDataExchange* pDX) {
-    CDialogEx::DoDataExchange(pDX);
-    DDX_Control(pDX, IDC_LIST1, logs);
-    DDX_Control(pDX, IDC_LIST2, userListBox);
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST1, logs);
+	DDX_Control(pDX, IDC_LIST2, userListBox);
+	DDX_Control(pDX, FILE_LIST, fileList);
 }
 
 BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
@@ -35,6 +36,8 @@ BEGIN_MESSAGE_MAP(CClientDlg, CDialogEx)
     ON_BN_CLICKED(IDOK, &CClientDlg::OnBnClickedOk)
     ON_LBN_SELCHANGE(IDC_LIST2, &CClientDlg::OnLbnSelchangeList2)
     ON_BN_CLICKED(IDC_BUTTON1, &CClientDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_BUTTON2, &CClientDlg::OnBnClickedButton2)
+	ON_LBN_SELCHANGE(FILE_LIST, &CClientDlg::OnLbnSelchangeList)
 END_MESSAGE_MAP()
 
 
@@ -115,6 +118,12 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
                 memcpy(&pvt, msg.content, sizeof msg.content);
                 handler.ReceiveOne(pvt, true);
             }
+			if (strcmp(msg.action, "new-file") == 0) {
+				fileList.AddString(unicode(msg.content));
+			}
+			if (strcmp(msg.action, "file") == 0) {
+				handler.SaveFile(msg.content);
+			}
             if (strcmp(msg.action, "new-user") == 0) {
                 handler.InsertUser(CString(msg.content));
             }
@@ -163,4 +172,21 @@ void CClientDlg::OnBnClickedButton1() {
     SignInDlg dlg;
     EndDialog(0);
     dlg.DoModal();
+}
+
+
+void CClientDlg::OnBnClickedButton2()
+{
+	CFileDialog dlg(TRUE, nullptr, nullptr, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, nullptr);
+	if (dlg.DoModal() == IDOK) {
+		handler.SendFile(convertToChar(dlg.GetPathName()));
+	}
+}
+
+
+void CClientDlg::OnLbnSelchangeList()
+{
+	CString file;
+	fileList.GetText(fileList.GetCurSel(), file);
+	handler.RequestFile(convertToChar(file));
 }

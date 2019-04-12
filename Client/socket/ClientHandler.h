@@ -42,5 +42,8 @@ public:
     void ReceiveOne(PrivateMessage, bool unread = false);
     void ChangeRoom(CString);
 
+	void SendFile(const char*);
+	void RequestFile(const char*);
+	void SaveFile(const char*);
 };
 

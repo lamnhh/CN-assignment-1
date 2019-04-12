@@ -1,9 +1,17 @@
 #include "ServerHandler.h"
+#include <cstdio>
 #include "../utils/usersys.h"
 #include "../utils/chat.h"
 
 Client::Client() : socket(0) {};
 
+const int PART_SIZE = 962;
+struct FilePart {
+	int id;
+	int size;
+	char filename[30];
+	char content[PART_SIZE];
+};
 struct PrivateMessage {
     char receiver[20];
     char message[980];
@@ -239,4 +247,40 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
         sendTo(sender, Message("message-one-new", (char*) &pvt, sizeof pvt));
         Sleep(25);
     }
+}
+
+void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
+	FilePart part;
+	memcpy((char*)&part, raw, sizeof FilePart);
+
+	char str[100];
+	if (part.id == 1) {
+		system(("mkdir " + string(part.filename)).c_str());
+		sendToAll(Message("new-file", part.filename));
+	}
+	sprintf(str, "%s/%s.%d", part.filename, part.filename, part.id);
+
+	FILE *f = _wfopen(unicode(str), unicode("wb"));
+	fwrite(part.content, 1, part.size, f);
+	fclose(f);
+}
+
+void ServerHandler::SendFile(SOCKET socket, const char *filename) {
+	FilePart part;
+	for (int i = 1;; ++i) {
+		char str[100];
+		sprintf(str, "%s/%s.%d", filename, filename, i);
+		FILE *f = _wfopen(unicode(str), unicode("rb"));
+		if (f == NULL) {
+			break;
+		}
+		part.size = fread(part.content, 1, PART_SIZE, f);
+		strcpy(part.filename, filename);
+		part.id = i;
+		fclose(f);
+
+		sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
+	}
+	part.id = -1;
+	sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
 }

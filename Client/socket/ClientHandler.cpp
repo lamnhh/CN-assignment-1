@@ -1,7 +1,28 @@
+#include <iostream>
+#include <string>
 #include <algorithm>
 #include "ClientHandler.h"
 #include "helper.h"
 using namespace std;
+
+const int PART_SIZE = 962;
+struct FilePart {
+	int id;
+	int size;
+	char filename[30];
+	char content[PART_SIZE];
+};
+
+string getFileName(string path) {
+	string ans = "";
+	for (int i = (int)path.size() - 1; i >= 0; --i) {
+		if (path[i] == '/' || path[i] == '\\') {
+			break;
+		}
+		ans = path[i] + ans;
+	}
+	return ans;
+}
 
 void ClientHandler::fetchMessList() {
     const int MAX_LENGTH = 72;
@@ -172,4 +193,55 @@ void ClientHandler::ChangeRoom(CString room) {
     if (room != CString("General")) {
         sendTo(client, Message("update-latest", convertToChar(room)));
     }
+}
+
+void ClientHandler::SendFile(const char *path) {
+	FILE *f = _wfopen(unicode(path), unicode("rb"));
+	string filename(getFileName(string(path)));
+	char buf[1000];
+	bool first = true;
+	int id = 0;
+	while (1) {
+		int cnt = fread(buf, 1, PART_SIZE, f);
+		if (cnt <= 0) {
+			break;
+		}
+		FilePart part;
+		part.id = ++id;
+		part.size = cnt;
+		strcpy(part.filename, filename.c_str());
+		memcpy(part.content, buf, cnt);
+
+		sendTo(client, Message("file", (char*)&part, sizeof FilePart));
+		first = false;
+	}
+	fclose(f);
+}
+
+void ClientHandler::RequestFile(const char *filename) {
+	sendTo(client, Message("request-file", filename));
+}
+
+void ClientHandler::SaveFile(const char *raw) {
+	FilePart part;
+	memcpy((char*)&part, raw, sizeof FilePart);
+
+	char str[100];
+	if (part.id == -1) {
+		char str[1000];
+		sprintf(str, "type tmp.%s\\%s.* > %s && rmdir tmp.%s /s /q", part.filename, part.filename, part.filename, part.filename);
+		system(str);
+		string s = string(part.filename) + string(" has been received");
+		this->messBox->AddString(unicode(s.c_str()));
+		return;
+	}
+	if (part.id == 1) {
+		string cmd = "mkdir tmp." + string(part.filename);
+		system(cmd.c_str());
+	}
+	sprintf(str, "tmp.%s/%s.%010d", part.filename, part.filename, part.id);
+
+	FILE *f = _wfopen(unicode(str), unicode("wb"));
+	fwrite(part.content, 1, part.size, f);
+	fclose(f);
 }
