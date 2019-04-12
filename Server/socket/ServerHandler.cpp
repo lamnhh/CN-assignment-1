@@ -262,8 +262,12 @@ void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 	char str[1000];
 	if (part.id == 1) {
 		system(("mkdir \"" + string(part.filename) + "-folder\"").c_str());
+		
+	}
+	else if (part.id == -1){
 		sendToAll(Message("new-file", part.filename));
 		handleUpdate(db, ("insert into file values ('" + string(part.filename) + "')").c_str());
+		return;
 	}
 	sprintf(str, "%s-folder/%s.%d", part.filename, part.filename, part.id);
 

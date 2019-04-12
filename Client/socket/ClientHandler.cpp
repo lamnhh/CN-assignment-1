@@ -230,6 +230,10 @@ void ClientHandler::SendFile(const char *path) {
 
 		Sleep(10);
 	}
+	FilePart part;
+	part.id = -1;
+	strcpy(part.filename, filename.c_str());
+	sendTo(client, Message("file", (char*)&part, sizeof FilePart));
 	fclose(f);
 }
 
