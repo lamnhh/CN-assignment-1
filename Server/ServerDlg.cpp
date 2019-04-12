@@ -125,13 +125,6 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             }
 			if (strcmp("file", msg.action) == 0) {
 				handler.SaveFile(wParam, msg.content);
-				//int id;
-				//memcpy((char*)&id, msg.content, sizeof(int));
-				//stringstream is;
-				//is << id;
-				//string str;
-				//is >> str;
-				//logs.AddString(unicode(str.c_str()));
 			}
 			if (strcmp("request-file", msg.action) == 0) {
 				handler.SendFile(wParam, msg.content);

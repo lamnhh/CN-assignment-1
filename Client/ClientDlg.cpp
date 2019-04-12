@@ -124,6 +124,14 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 			if (strcmp(msg.action, "file") == 0) {
 				handler.SaveFile(msg.content);
 			}
+			if (strcmp(msg.action, "file-length") == 0) {
+				struct FileLength {
+					char filename[50];
+					int length;
+				} fl;
+				memcpy(&fl, msg.content, sizeof FileLength);
+				handler.ReceiveFileLength(fl.filename, fl.length);
+			}
             if (strcmp(msg.action, "new-user") == 0) {
                 handler.InsertUser(CString(msg.content));
             }
@@ -175,8 +183,7 @@ void CClientDlg::OnBnClickedButton1() {
 }
 
 
-void CClientDlg::OnBnClickedButton2()
-{
+void CClientDlg::OnBnClickedButton2() {
 	CFileDialog dlg(TRUE, nullptr, nullptr, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, nullptr);
 	if (dlg.DoModal() == IDOK) {
 		handler.SendFile(convertToChar(dlg.GetPathName()));
@@ -184,8 +191,7 @@ void CClientDlg::OnBnClickedButton2()
 }
 
 
-void CClientDlg::OnLbnSelchangeList()
-{
+void CClientDlg::OnLbnSelchangeList() {
 	CString file;
 	fileList.GetText(fileList.GetCurSel(), file);
 	handler.RequestFile(convertToChar(file));

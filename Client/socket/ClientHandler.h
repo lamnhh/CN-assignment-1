@@ -20,6 +20,7 @@ private:
     SOCKADDR_IN serverAddress;
 
     map<CString, MessageList> messageList;
+	map<CString, int> fileLength;
     CString currentRoom;
     vector<pair<CString, int>> userList;
 
@@ -45,5 +46,6 @@ public:
 	void SendFile(const char*);
 	void RequestFile(const char*);
 	void SaveFile(const char*);
+	void ReceiveFileLength(const char*, int);
 };
 

@@ -252,7 +252,6 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
 void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 	FilePart part;
 	memcpy((char*)&part, raw, sizeof FilePart);
-	
 
 	char str[1000];
 	if (part.id == 1) {
@@ -267,6 +266,23 @@ void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 }
 
 void ServerHandler::SendFile(SOCKET socket, const char *filename) {
+	for (int i = 1;; ++i) {
+		char str[1000];
+		sprintf(str, "%s-folder/%s.%d", filename, filename, i);
+		FILE *f = _wfopen(unicode(str), unicode("rb"));
+		if (f == NULL) {
+			struct FileLength {
+				char filename[50];
+				int length;
+			} fl;
+			strcpy(fl.filename, filename);
+			fl.length = i - 1;
+			sendTo(socket, Message("file-length", (char*)&fl, sizeof FileLength));
+			break;
+		}
+	}
+	Sleep(100);
+
 	FilePart part;
 	for (int i = 1;; ++i) {
 		char str[1000];
