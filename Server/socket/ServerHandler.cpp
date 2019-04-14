@@ -286,7 +286,7 @@ void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 void ServerHandler::CreateForReading(SOCKET socket, const char *rawname) {
     string filename(rawname);
     FILE *f = _wfopen(unicode(rawname), unicode("rb"));
-    fileReader[filename] = f;
+    fileReader[make_pair(filename, socket)] = f;
 
     FilePart part;
     strcpy(part.filename, rawname);
@@ -296,7 +296,7 @@ void ServerHandler::CreateForReading(SOCKET socket, const char *rawname) {
 
 void ServerHandler::SendFile(SOCKET socket, const char *rawname) {
     string filename(rawname);
-    FILE *f = fileReader[filename];
+    FILE *f = fileReader[make_pair(filename, socket)];
 
     FilePart part;
     strcpy(part.filename, rawname);
@@ -304,7 +304,7 @@ void ServerHandler::SendFile(SOCKET socket, const char *rawname) {
 
     if (part.size < PART_SIZE) {
         fclose(f);
-        fileReader.erase(filename);
+        fileReader.erase(make_pair(filename, socket));
     }
     sendTo(socket, Message("request-file-response", (char*)&part, sizeof part));
 }

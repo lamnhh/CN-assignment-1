@@ -29,7 +29,7 @@ private:
     vector<AuthInfo> authList;
     
     map<string, FILE*> fileWriter;
-    map<string, FILE*> fileReader;
+    map<pair<string, SOCKET>, FILE*> fileReader;
 
     void sendToAll(Message);
     string findUsername(SOCKET);
