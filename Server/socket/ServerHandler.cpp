@@ -5,9 +5,8 @@
 
 Client::Client() : socket(0) {};
 
-const int PART_SIZE = 942;
+const int PART_SIZE = 946;
 struct FilePart {
-	int id;
 	int size;
 	char filename[50];
 	char content[PART_SIZE];
@@ -228,12 +227,14 @@ void ServerHandler::FetchHistoryAll(SOCKET receiver) {
         Sleep(25);
     }
 }
+
 void ServerHandler::FetchFileAll(SOCKET receiver){
 	Table fileList = fetchFile(db);
 	for (int i = 1; i < (int)fileList.size(); ++i){
-		sendTo(receiver,Message("new-file", fileList[i][0].c_str()));
+		sendTo(receiver, Message("new-file", fileList[i][0].c_str()));
 	}
 }
+
 void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername) {
     string user1 = findUsername(sender);
     string user2 = string(receiverUsername);
@@ -255,64 +256,59 @@ void ServerHandler::FetchHistoryOne(SOCKET sender, const char *receiverUsername)
     }
 }
 
+void ServerHandler::CreateForWriting(SOCKET socket, const char *rawname) {
+    string filename(rawname);
+    FILE *f = _wfopen(unicode(rawname), unicode("wb"));
+    fileWriter[filename] = f;
+    sendTo(socket, Message("upload-file-response", rawname));
+}
+
 void ServerHandler::SaveFile(SOCKET socket, const char *raw) {
 	FilePart part;
 	memcpy((char*)&part, raw, sizeof FilePart);
+    
+    FILE *f = fileWriter[string(part.filename)];
+    fwrite(part.content, 1, part.size, f);
 
-	char str[1000];
-	if (part.id == 1) {
-		system(("mkdir \"" + string(part.filename) + "-folder\"").c_str());
-		
-	}
-	else if (part.id == -1){
-		sendToAll(Message("new-file", part.filename));
-		handleUpdate(db, ("insert into file values ('" + string(part.filename) + "')").c_str());
-		return;
-	}
-	sprintf(str, "%s-folder/%s.%d", part.filename, part.filename, part.id);
-
-	FILE *f = _wfopen(unicode(str), unicode("wb"));
-	fwrite(part.content, 1, part.size, f);
-	fclose(f);
+    if (part.size < PART_SIZE) {
+        fclose(f);
+        fileWriter.erase(string(part.filename));
+        sendToAll(Message("new-file", part.filename));
+        
+        char statement[100];
+        sprintf(statement, "insert into file values ('%s')", part.filename);
+        handleUpdate(db, statement);
+    } else {
+        sendTo(socket, Message("upload-file-response", part.filename));
+    }
 }
 
-void ServerHandler::SendFile(SOCKET socket, const char *filename) {
-	for (int i = 1;; ++i) {
-		char str[1000];
-		sprintf(str, "%s-folder/%s.%d", filename, filename, i);
-		FILE *f = _wfopen(unicode(str), unicode("rb"));
-		if (f == NULL) {
-			struct FileLength {
-				char filename[50];
-				int length;
-			} fl;
-			strcpy(fl.filename, filename);
-			fl.length = i - 1;
-			sendTo(socket, Message("file-length", (char*)&fl, sizeof FileLength));
-			break;
-		}
-		fclose(f);
-	}
-	Sleep(100);
+void ServerHandler::CreateForReading(SOCKET socket, const char *rawname) {
+    string filename(rawname);
+    FILE *f = _wfopen(unicode(rawname), unicode("rb"));
+    fileReader[make_pair(filename, socket)] = f;
 
-	FilePart part;
-	for (int i = 1;; ++i) {
-		char str[1000];
-		sprintf(str, "%s-folder/%s.%d", filename, filename, i);
-		FILE *f = _wfopen(unicode(str), unicode("rb"));
-		if (f == NULL) {
-			break;
-		}
-		part.size = fread(part.content, 1, PART_SIZE, f);
-		strcpy(part.filename, filename);
-		part.id = i;
-		fclose(f);
+    FilePart part;
+    strcpy(part.filename, rawname);
+    part.size = -1;
+    sendTo(socket, Message("request-file-response", (char*)&part, sizeof part));
+}
 
-		sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
-		
-		Sleep(10);
-	}
-	part.id = -1;
-	sendTo(socket, Message("file", (char*)&part, sizeof FilePart));
-	Sleep(10);
+void ServerHandler::SendFile(SOCKET socket, const char *rawname) {
+    string filename(rawname);
+    FILE *f = fileReader[make_pair(filename, socket)];
+
+    FilePart part;
+    strcpy(part.filename, rawname);
+    part.size = fread(part.content, 1, PART_SIZE, f);
+
+    if (part.size < PART_SIZE) {
+        fclose(f);
+        fileReader.erase(make_pair(filename, socket));
+    }
+    sendTo(socket, Message("request-file-response", (char*)&part, sizeof part));
+}
+
+void ServerHandler::Initialize(CListBox *logs) {
+    this->logs = logs;
 }

@@ -30,6 +30,7 @@ Table fetchHistory(sqlite3 *db, const char *user1, const char *user2, const char
     }
     return handleSelect(db, str);
 }
-Table fetchFile(sqlite3 *db){
-	return handleSelect(db, "select * from file");
+
+Table fetchFile(sqlite3 *db) {
+	return handleSelect(db, "select filename from file");
 }

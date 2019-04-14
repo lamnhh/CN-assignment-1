@@ -15,7 +15,8 @@
 
 // CServerDlg dialog
 CServerDlg::CServerDlg(CWnd *pParent): CDialogEx(CServerDlg::IDD, pParent) {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);    
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+    handler.Initialize(&logs);
 }
 
 void CServerDlg::DoDataExchange(CDataExchange* pDX) {
@@ -123,12 +124,18 @@ LRESULT CServerDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
             if (strcmp("update-latest", msg.action) == 0) {
                 handler.UpdateLatest(wParam, msg.content);
             }
-			if (strcmp("file", msg.action) == 0) {
+			if (strcmp("upload-file", msg.action) == 0) {
+				handler.CreateForWriting(wParam, msg.content);
+			}
+            if (strcmp("upload-file-part", msg.action) == 0) {
 				handler.SaveFile(wParam, msg.content);
 			}
-			if (strcmp("request-file", msg.action) == 0) {
-				handler.SendFile(wParam, msg.content);
-			}
+            if (strcmp("request-file", msg.action) == 0) {
+                handler.CreateForReading(wParam, msg.content);
+            }
+            if (strcmp("request-file-part", msg.action) == 0) {
+                handler.SendFile(wParam, msg.content);
+            }
             break;
         }
         case FD_CLOSE: {
