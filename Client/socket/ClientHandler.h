@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <utility>
+#include <string>
+#include <cstdio>
 using namespace std;
 
 typedef vector<CString> MessageList;
@@ -21,9 +23,12 @@ private:
 
     map<CString, MessageList> messageList;
 	map<CString, int> fileLength;
-    CString currentRoom;
-    vector<pair<CString, int>> userList;
 
+    map<string, FILE*> fileWriter;
+    map<string, FILE*> fileReader;
+
+    vector<pair<CString, int>> userList;
+    CString currentRoom;
     CListBox *messBox;
     CListBox *userBox;
 
@@ -36,16 +41,15 @@ public:
     void Disconnect();
 
     void InsertUser(CString);
-    void RemoveUser(CString);
-
     void Send(CString);
     void ReceiveAll(CString, bool unread = false);
     void ReceiveOne(PrivateMessage, bool unread = false);
     void ChangeRoom(CString);
 
 	void SendFile(const char*);
-	void RequestFile(const char*);
-	void SaveFile(const char*);
-	void ReceiveFileLength(const char*, int);
+    void SendFilePart(const char*);
+
+    void RequestFile(const char*);
+    void ReceiveFilePart(const char*);
 };
 

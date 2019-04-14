@@ -6,9 +6,8 @@
 #include "helper.h"
 using namespace std;
 
-const int PART_SIZE = 942;
+const int PART_SIZE = 946;
 struct FilePart {
-	int id;
 	int size;
 	char filename[50];
 	char content[PART_SIZE];
@@ -120,21 +119,6 @@ void ClientHandler::InsertUser(CString username) {
     sendTo(client, Message("request-one", convertToChar(username)));
 }
 
-void ClientHandler::RemoveUser(CString username) {
-    /*int pos = -1;
-    for (int i = 0; i < (int)userList.size(); ++i) {
-        if (userList[i].first == username) {
-            pos = i;
-            break;
-        }
-    }
-    if (pos != -1) {
-        userList.erase(userList.begin() + pos);
-    }
-    messageList.erase(username);
-    fetchUserList();*/
-}
-
 void ClientHandler::Send(CString message) {
     if (currentRoom == CString("General")) {
         sendTo(client, Message("message-all", convertToChar(message)));
@@ -198,84 +182,45 @@ void ClientHandler::ChangeRoom(CString room) {
 
 void ClientHandler::SendFile(const char *path) {
 	FILE *f = _wfopen(unicode(path), unicode("rb"));
-	fseek(f, 0, SEEK_END);
-	int fileSize = ftell(f);
-	fseek(f, 0, SEEK_SET);
-
 	string filename(getFileName(string(path)));
-	int partCount = (fileSize + PART_SIZE - 1) / PART_SIZE;
-	char buf[1000];
-	for (int id = 1; id <= partCount; ++id) {
-		int cnt = fread(buf, 1, PART_SIZE, f);
-
-		FilePart part;
-		part.id = id;
-		part.size = cnt;
-		strcpy(part.filename, filename.c_str());
-		memcpy(part.content, buf, cnt);
-
-		sendTo(client, Message("file", (char*)&part, sizeof FilePart));
-		if (id == 1) {
-			stringstream is;
-			is << "Uploading " << filename << " (0%)";
-			this->messBox->AddString(unicode(is.str().c_str()));
-		} else {
-			int p = (id * 100 + partCount - 1) / partCount;
-			stringstream is;
-			is << "Uploading " << filename << " (" << p << "%)";
-			this->messBox->DeleteString(this->messBox->GetCount() - 1);
-			this->messBox->AddString(unicode(is.str().c_str()));
-		}
-		this->messBox->SetCurSel(this->messBox->GetCount() - 1);
-
-		Sleep(10);
-	}
-	FilePart part;
-	part.id = -1;
-	strcpy(part.filename, filename.c_str());
-	sendTo(client, Message("file", (char*)&part, sizeof FilePart));
-	fclose(f);
+    fileReader[filename] = f;
+    sendTo(client, Message("upload-file", filename.c_str()));
 }
 
-void ClientHandler::RequestFile(const char *filename) {
-	sendTo(client, Message("request-file", filename));
+void ClientHandler::SendFilePart(const char *rawname) {
+    string filename(rawname);
+    FILE *f = fileReader[filename];
+    FilePart part;
+    strcpy(part.filename, rawname);
+    part.size = fread(part.content, 1, PART_SIZE, f);
+    sendTo(client, Message("upload-file-part", (char*)&part, sizeof part));
+
+    if (part.size < PART_SIZE) {
+        fclose(f);
+        fileReader.erase(filename);
+    }
 }
 
-void ClientHandler::SaveFile(const char *raw) {
+void ClientHandler::RequestFile(const char *rawname) {
+    sendTo(client, Message("request-file", rawname));
+}
+
+void ClientHandler::ReceiveFilePart(const char *raw) {
 	FilePart part;
 	memcpy((char*)&part, raw, sizeof FilePart);
-
-	char str[1000];
-	if (part.id == -1) {
-		Sleep(1000);
-		sprintf(str, "copy /b \"tmp.%s\\%s.*\" \"%s\" && rmdir \"tmp.%s\" /s /q", part.filename, part.filename, part.filename, part.filename);
-		system(str);
-		return;
-	}
-	if (part.id == 1) {
-		string cmd = "mkdir \"tmp." + string(part.filename) + "\"";
-		system(cmd.c_str());
-
-		stringstream is;
-		is << "Downloading " << part.filename << " (0%)";
-		this->messBox->AddString(unicode(is.str().c_str()));
-	} else {
-		int partCount = fileLength[unicode(part.filename)];
-		int percentage = (part.id * 100 + partCount - 1) / partCount;
-		stringstream is;
-		is << "Downloading " << part.filename << " (" << percentage << "%)";
-		this->messBox->DeleteString(this->messBox->GetCount() - 1);
-		this->messBox->AddString(unicode(is.str().c_str()));
-	}
-	this->messBox->SetCurSel(this->messBox->GetCount() - 1);
-	sprintf(str, "tmp.%s/%s.%010d", part.filename, part.filename, part.id);
-
-	FILE *f = _wfopen(unicode(str), unicode("wb"));
-	fwrite(part.content, 1, part.size, f);
-	fclose(f);
-}
-
-void ClientHandler::ReceiveFileLength(const char *filename, int length) {
-	CString name = unicode(filename);
-	fileLength[name] = length;
+    
+    string filename(part.filename);
+    if (part.size == -1) {
+        FILE *f = _wfopen(unicode(part.filename), unicode("wb"));
+        fileWriter[filename] = f;
+    } else {
+        FILE *f = fileWriter[filename];
+        fwrite(part.content, 1, part.size, f);
+        if (part.size < PART_SIZE) {
+            fclose(f);
+            fileWriter.erase(filename);
+            return;
+        }
+    }
+    sendTo(client, Message("request-file-part", part.filename));
 }

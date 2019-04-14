@@ -121,22 +121,14 @@ LRESULT CClientDlg::handleEvents(WPARAM wParam, LPARAM lParam) {
 			if (strcmp(msg.action, "new-file") == 0) {
 				fileList.AddString(unicode(msg.content));
 			}
-			if (strcmp(msg.action, "file") == 0) {
-				handler.SaveFile(msg.content);
-			}
-			if (strcmp(msg.action, "file-length") == 0) {
-				struct FileLength {
-					char filename[50];
-					int length;
-				} fl;
-				memcpy(&fl, msg.content, sizeof FileLength);
-				handler.ReceiveFileLength(fl.filename, fl.length);
-			}
+            if (strcmp(msg.action, "upload-file-response") == 0) {
+                handler.SendFilePart(msg.content);
+            }
+            if (strcmp(msg.action, "request-file-response") == 0) {
+                handler.ReceiveFilePart(msg.content);
+            }
             if (strcmp(msg.action, "new-user") == 0) {
                 handler.InsertUser(CString(msg.content));
-            }
-            if (strcmp(msg.action, "user-logout") == 0) {
-                handler.RemoveUser(CString(msg.content));
             }
             if (strcmp(msg.action, "force-logout") == 0) {
                 MessageBox(L"Connection lost.");
