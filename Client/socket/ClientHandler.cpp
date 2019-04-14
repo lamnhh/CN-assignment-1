@@ -185,6 +185,10 @@ void ClientHandler::SendFile(const char *path) {
 	string filename(getFileName(string(path)));
     fileReader[filename] = f;
     sendTo(client, Message("upload-file", filename.c_str()));
+
+    CString mess = unicode(("Uploading " + filename).c_str());
+    this->messBox->AddString(mess);
+    messageList[currentRoom].push_back(mess);
 }
 
 void ClientHandler::SendFilePart(const char *rawname) {
@@ -197,12 +201,20 @@ void ClientHandler::SendFilePart(const char *rawname) {
 
     if (part.size < PART_SIZE) {
         fclose(f);
-        fileReader.erase(filename);
+        fileReader.erase(filename);        
+
+        CString mess = unicode(("Finished uploading " + filename).c_str());
+        this->messBox->AddString(mess);
+        messageList[currentRoom].push_back(mess);
     }
 }
 
 void ClientHandler::RequestFile(const char *rawname) {
     sendTo(client, Message("request-file", rawname));
+
+    CString mess = unicode(("Downloading " + string(rawname)).c_str());
+    messageList[currentRoom].push_back(mess);
+    this->messBox->AddString(mess);
 }
 
 void ClientHandler::ReceiveFilePart(const char *raw) {
@@ -212,13 +224,16 @@ void ClientHandler::ReceiveFilePart(const char *raw) {
     string filename(part.filename);
     if (part.size == -1) {
         FILE *f = _wfopen(unicode(part.filename), unicode("wb"));
-        fileWriter[filename] = f;
+        fileWriter[filename] = f;        
     } else {
         FILE *f = fileWriter[filename];
         fwrite(part.content, 1, part.size, f);
         if (part.size < PART_SIZE) {
             fclose(f);
             fileWriter.erase(filename);
+            CString mess = unicode(("Finished downloading " + string(filename)).c_str());
+            messageList[currentRoom].push_back(mess);
+            this->messBox->AddString(mess);
             return;
         }
     }
